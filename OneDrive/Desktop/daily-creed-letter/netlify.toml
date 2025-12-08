@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "netlify/functions"
+
+# Netlify Functions로 Cron Job 설정
+[[functions]]
+  path = "api/*"
+  included_files = ["prisma/**"]
+
+# 환경 변수 (Netlify UI에서 설정)
+# GEMINI_API_KEY
+# GMAIL_USER
+# GMAIL_APP_PASSWORD
+# RECIPIENT_EMAIL
+
+# Scheduled Functions (매일 오전 7시 KST = 오전 10시 UTC in summer, 오전 11시 UTC in winter)
+# 한국은 UTC+9이므로 22:00 UTC = 07:00 KST (다음날)
+[[edge_functions]]
+  path = "/api/daily-creed"
+  function = "scheduled-letter"
