@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { db } from '../utils/db.js';
+import { prepare } from '../utils/db.js';
 
 config();
 
@@ -14,15 +14,15 @@ console.log(`   PORT: ${process.env.PORT || '3000'}\n`);
 
 // Check database
 console.log('💾 Database Check:');
-const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+const user = prepare('SELECT * FROM users WHERE id = ?').get(1);
 console.log(`   Demo user exists: ${user ? '✅ YES' : '❌ NO'}`);
 
 if (user) {
-  const phrasesCount = db.prepare('SELECT COUNT(*) as count FROM favorite_phrases WHERE user_id = 1').get() as { count: number };
-  const diariesCount = db.prepare('SELECT COUNT(*) as count FROM diary_entries WHERE user_id = 1 AND DATE(created_at) = DATE("now", "-1 day")').get() as { count: number };
+  const phrases = prepare('SELECT * FROM favorite_phrases WHERE user_id = ?').all(1);
+  const diaries = prepare('SELECT * FROM diary_entries WHERE user_id = ?').all(1);
   
-  console.log(`   Favorite phrases: ${phrasesCount.count}`);
-  console.log(`   Recent diaries: ${diariesCount.count}\n`);
+  console.log(`   Favorite phrases: ${phrases.length}`);
+  console.log(`   Recent diaries: ${diaries.length}\n`);
 }
 
 // Instructions

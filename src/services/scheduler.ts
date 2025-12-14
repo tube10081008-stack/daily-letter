@@ -41,13 +41,12 @@ export async function processAndSendLetters(): Promise<void> {
         console.log(`🤖 Generating letter for ${diary.email}...`);
 
         // Generate letter content with AI
-        const letterContent = await generateLetter(
-          diary.content,
-          diary.mood,
-          phrase.content,
-          phrase.author
-        );
-
+const letterContent = await generateLetter(
+  diary.content,
+  diary.mood || null,
+  phrase.content,
+  phrase.author || null
+);
         // Send email
         const today = new Date().toLocaleDateString('ko-KR', {
           year: 'numeric',
