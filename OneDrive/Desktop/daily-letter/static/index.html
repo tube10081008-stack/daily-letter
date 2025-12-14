@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Condition Letter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+      <h1 class="text-4xl font-bold text-center text-gray-800 mb-2">
+        💌 Daily Condition Letter
+      </h1>
+      <p class="text-center text-gray-600">
+        매일 밤 일기를 쓰면, 다음날 아침 7시 AI가 따뜻한 편지를 보내드립니다
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Diary Section -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">📔 오늘의 일기</h2>
+        <form id="diaryForm">
+          <textarea 
+            id="diaryContent" 
+            rows="8" 
+            class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="오늘 하루는 어땠나요? 자유롭게 적어보세요..."
+            required
+          ></textarea>
+          
+          <input 
+            type="text" 
+            id="diaryMood" 
+            class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="오늘의 기분 (선택사항)"
+          />
+          
+          <button 
+            type="submit" 
+            class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
+          >
+            일기 저장
+          </button>
+        </form>
+        
+        <div id="diaryMessage" class="mt-4 hidden"></div>
+      </div>
+
+      <!-- Favorite Phrases Section -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">✨ 좋아하는 문장</h2>
+        
+        <form id="phraseForm" class="mb-6">
+          <textarea 
+            id="phraseContent" 
+            rows="3" 
+            class="w-full border border-gray-300 rounded-lg p-3 mb-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="마음에 드는 문장을 추가해보세요..."
+            required
+          ></textarea>
+          
+          <input 
+            type="text" 
+            id="phraseAuthor" 
+            class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="작가/출처 (선택사항)"
+          />
+          
+          <button 
+            type="submit" 
+            class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition"
+          >
+            문장 추가
+          </button>
+        </form>
+
+        <div id="phrasesList" class="space-y-3 max-h-96 overflow-y-auto">
+          <!-- Phrases will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+      <h3 class="text-xl font-bold mb-3 text-gray-800">ℹ️ 사용 방법</h3>
+      <ul class="space-y-2 text-gray-700">
+        <li>📝 매일 밤 12시 전에 오늘의 일기를 작성하세요</li>
+        <li>✨ 좋아하는 문장을 미리 추가해두세요 (언제든 추가 가능)</li>
+        <li>📧 다음날 아침 7시에 AI가 생성한 따뜻한 편지가 이메일로 도착합니다</li>
+        <li>💌 편지에는 당신의 일기에 대한 공감과 좋아하는 문장에 대한 해석이 담깁니다</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
