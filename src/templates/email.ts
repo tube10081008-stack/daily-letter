@@ -2,6 +2,15 @@ import type { EmailData } from '../services/mailer.js';
 
 export function generateEmailHTML(data: EmailData): string {
   const { recipientName, date, letterContent } = data;
+  
+  // 마침표 뒤에 줄바꿈 추가하는 함수
+  const formatText = (text: string) => {
+    return text
+      .split('. ')
+      .filter(s => s.trim())
+      .map(sentence => `<p style="margin-bottom: 16px;">${sentence.trim()}.</p>`)
+      .join('');
+  };
 
   return `
 <!DOCTYPE html>
@@ -66,12 +75,20 @@ export function generateEmailHTML(data: EmailData): string {
       font-size: 15px;
       color: #555;
     }
+    .section-content p {
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
     .quote-box {
       background: #f9f9f9;
       border-left: 4px solid #667eea;
       padding: 20px;
       margin: 20px 0;
       font-style: italic;
+    }
+    .quote-box p {
+      margin-bottom: 16px;
+      line-height: 1.8;
     }
     .footer {
       background-color: #f9f9f9;
@@ -100,24 +117,24 @@ export function generateEmailHTML(data: EmailData): string {
 
       <div class="section">
         <div class="section-content">
-          ${letterContent.intro}
+          ${formatText(letterContent.intro)}
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">📔 어제의 당신에게</div>
         <div class="section-content">
-          ${letterContent.diaryFeedback}
+          ${formatText(letterContent.diaryFeedback)}
         </div>
       </div>
 
       <div class="quote-box">
-        ${letterContent.phraseFeedback}
+        ${formatText(letterContent.phraseFeedback)}
       </div>
 
       <div class="section">
         <div class="section-content">
-          ${letterContent.outro}
+          ${formatText(letterContent.outro)}
         </div>
       </div>
     </div>

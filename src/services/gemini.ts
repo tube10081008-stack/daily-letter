@@ -20,7 +20,8 @@ export async function generateLetter(
   phraseAuthor: string | null
 ): Promise<LetterContent> {
   const prompt = `
-당신은 '우리는 시를 사랑해(우시사)' 뉴스레터 스타일로 따뜻하고 감성적인 편지를 쓰는 AI입니다.
+당신은 감성적이고 따뜻한 편지를 쓰는 AI입니다.
+시적인 뉴스레터 스타일로 작성해주세요.
 
 사용자의 어제 일기와 좋아하는 문장을 바탕으로 오늘 아침 편지를 작성해주세요.
 

@@ -27,7 +27,7 @@ async function ensureDemoData() {
       
       // Insert demo user
       const insertUser = prepare('INSERT INTO users (email, name) VALUES (?, ?)');
-      const result = insertUser.run('demo@example.com', 'Demo User');
+      const result = insertUser.run('demo@example.com', '성현');
       
       // Insert sample favorite phrases
       const insertPhrase = prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)');
