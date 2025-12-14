@@ -5,12 +5,17 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dataDir = join(__dirname, '../../data');
+// Render 환경에서는 마운트된 Disk 사용, 로컬에서는 상대 경로 사용
+const isRender = process.env.RENDER === 'true';
+const dataDir = isRender ? '/opt/render/project/data' : join(__dirname, '../../data');
 const dbPath = join(dataDir, 'database.json');
+
+console.log(`📁 Database path: ${dbPath}`);
 
 // Ensure data directory exists
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
+  console.log(`✅ Created data directory: ${dataDir}`);
 }
 
 export interface User {
