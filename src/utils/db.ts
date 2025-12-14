@@ -1,21 +1,15 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// 절대 경로 사용 - Render Disk 마운트 경로
+const DB_PATH = '/opt/render/project/data/database.json';
+const DATA_DIR = '/opt/render/project/data';
 
-// Render 환경에서는 마운트된 Disk 사용, 로컬에서는 상대 경로 사용
-const isRender = process.env.RENDER === 'true';
-const dataDir = isRender ? '/opt/render/project/data' : join(__dirname, '../../data');
-const dbPath = join(dataDir, 'database.json');
-
-console.log(`📁 Database path: ${dbPath}`);
+console.log(`📁 Using database path: ${DB_PATH}`);
 
 // Ensure data directory exists
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true });
-  console.log(`✅ Created data directory: ${dataDir}`);
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true });
+  console.log(`✅ Created data directory: ${DATA_DIR}`);
 }
 
 export interface User {
@@ -55,10 +49,18 @@ interface Database {
 
 // Load or initialize database
 function loadDb(): Database {
-  if (existsSync(dbPath)) {
-    const data = readFileSync(dbPath, 'utf-8');
-    return JSON.parse(data);
+  try {
+    if (existsSync(DB_PATH)) {
+      const data = readFileSync(DB_PATH, 'utf-8');
+      const db = JSON.parse(data);
+      console.log(`📊 Loaded database: ${db.diary_entries.length} diaries, ${db.favorite_phrases.length} phrases`);
+      return db;
+    }
+  } catch (error) {
+    console.error('⚠️  Error loading database:', error);
   }
+  
+  console.log('🆕 Creating new database');
   return {
     users: [],
     diary_entries: [],
@@ -69,28 +71,26 @@ function loadDb(): Database {
 
 // Save database
 function saveDb(data: Database): void {
-  writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    console.log(`💾 Database saved: ${data.diary_entries.length} diaries`);
+  } catch (error) {
+    console.error('❌ Error saving database:', error);
+  }
 }
-
-// Get current database
-let dbCache: Database = loadDb();
 
 // Execute SQL-like operations
 export function exec(sql: string): void {
-  // This is a simplified version for table creation
-  // In JSON mode, tables are already initialized
   console.log('Table creation simulated:', sql.substring(0, 50) + '...');
 }
 
 // Prepare statement
 export function prepare(sql: string) {
-  const db = loadDb();
-  
   return {
     run(...params: any[]) {
+      const db = loadDb();
       const sqlLower = sql.toLowerCase();
       
-      // INSERT INTO users
       if (sqlLower.includes('insert into users')) {
         const [email, name] = params;
         const id = ++db._counters.users;
@@ -104,7 +104,6 @@ export function prepare(sql: string) {
         return { lastInsertRowid: id, changes: 1 };
       }
       
-      // INSERT INTO diary_entries
       if (sqlLower.includes('insert into diary_entries')) {
         const [user_id, content, mood] = params;
         const id = ++db._counters.diary_entries;
@@ -116,10 +115,10 @@ export function prepare(sql: string) {
           created_at: new Date().toISOString()
         });
         saveDb(db);
+        console.log(`✅ Diary saved: ID ${id}`);
         return { lastInsertRowid: id, changes: 1 };
       }
       
-      // INSERT INTO favorite_phrases
       if (sqlLower.includes('insert into favorite_phrases')) {
         const [user_id, content, author] = params;
         const id = ++db._counters.favorite_phrases;
@@ -134,7 +133,6 @@ export function prepare(sql: string) {
         return { lastInsertRowid: id, changes: 1 };
       }
       
-      // UPDATE diary_entries SET sent_at
       if (sqlLower.includes('update diary_entries') && sqlLower.includes('sent_at')) {
         const [id] = params;
         const entry = db.diary_entries.find(e => e.id === id);
@@ -146,7 +144,6 @@ export function prepare(sql: string) {
         return { changes: 0 };
       }
       
-      // DELETE FROM favorite_phrases
       if (sqlLower.includes('delete from favorite_phrases')) {
         const [id, user_id] = params;
         const index = db.favorite_phrases.findIndex(p => p.id === id && p.user_id === user_id);
@@ -165,13 +162,20 @@ export function prepare(sql: string) {
       const db = loadDb();
       const sqlLower = sql.toLowerCase();
       
-      // SELECT FROM users
       if (sqlLower.includes('from users')) {
         if (sqlLower.includes('where email')) {
           return db.users.find(u => u.email === params[0]);
         }
         if (sqlLower.includes('where id')) {
           return db.users.find(u => u.id === params[0]);
+        }
+      }
+      
+      if (sqlLower.includes('from favorite_phrases') && sqlLower.includes('random()')) {
+        const user_id = params[0];
+        const phrases = db.favorite_phrases.filter(p => p.user_id === user_id);
+        if (phrases.length > 0) {
+          return phrases[Math.floor(Math.random() * phrases.length)];
         }
       }
       
@@ -182,53 +186,50 @@ export function prepare(sql: string) {
       const db = loadDb();
       const sqlLower = sql.toLowerCase();
       
-      // SELECT FROM diary_entries
+      console.log(`🔍 Querying database: ${db.diary_entries.length} total diaries`);
+      
       if (sqlLower.includes('from diary_entries')) {
-        let results = db.diary_entries.filter(d => d.user_id === params[0]);
-        
-        // Filter by date if specified
-        if (sqlLower.includes('date(created_at)') && params[1]) {
-          const targetDate = params[1];
-          results = results.filter(d => d.created_at.startsWith(targetDate));
-        }
+        let results = db.diary_entries;
         
         // Filter unsent
         if (sqlLower.includes('sent_at is null')) {
           results = results.filter(d => !d.sent_at);
+          console.log(`📝 Unsent diaries: ${results.length}`);
         }
         
         // Order by created_at DESC
-        if (sqlLower.includes('order by created_at desc')) {
+        if (sqlLower.includes('order by') && sqlLower.includes('desc')) {
           results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         }
         
         // Limit
-        if (sqlLower.includes('limit')) {
-          const limit = params[params.length - 1];
+        const limitMatch = sqlLower.match(/limit\s+(\d+)/);
+        if (limitMatch) {
+          const limit = parseInt(limitMatch[1]);
           results = results.slice(0, limit);
+        }
+        
+        // Join with users if needed
+        if (sqlLower.includes('join users')) {
+          return results.map(d => ({
+            ...d,
+            email: db.users.find(u => u.id === d.user_id)?.email || '',
+            name: db.users.find(u => u.id === d.user_id)?.name || ''
+          }));
         }
         
         return results;
       }
       
-      // SELECT FROM favorite_phrases
       if (sqlLower.includes('from favorite_phrases')) {
-        let results = db.favorite_phrases.filter(p => p.user_id === params[0]);
+        let results = db.favorite_phrases;
         
-        // Random order
-        if (sqlLower.includes('random()')) {
-          results = results.sort(() => Math.random() - 0.5);
+        if (params[0]) {
+          results = results.filter(p => p.user_id === params[0]);
         }
         
-        // Order by created_at DESC
         if (sqlLower.includes('order by created_at desc')) {
           results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        }
-        
-        // Limit
-        if (sqlLower.includes('limit')) {
-          const limit = params[params.length - 1];
-          results = results.slice(0, limit);
         }
         
         return results;
