@@ -9,6 +9,43 @@ import { startScheduler, processAndSendLetters } from './services/scheduler.js';
 import { testMailerConnection } from './services/mailer.js';
 
 config();
+// Auto-initialize database with demo data on startup
+import { prepare, exec } from './utils/db.js';
+
+async function ensureDemoData() {
+  try {
+    // Check if demo user exists
+    const existingUser = prepare('SELECT id FROM users WHERE email = ?').get('demo@example.com');
+    
+    if (!existingUser) {
+      console.log('🔧 Initializing database with demo data...');
+      
+      // Create tables (in case they don't exist)
+      exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, created_at TEXT DEFAULT (datetime("now", "localtime")))');
+      exec('CREATE TABLE IF NOT EXISTS diary_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, content TEXT NOT NULL, mood TEXT, created_at TEXT DEFAULT (datetime("now", "localtime")), sent_at TEXT, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)');
+      exec('CREATE TABLE IF NOT EXISTS favorite_phrases (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, content TEXT NOT NULL, author TEXT, created_at TEXT DEFAULT (datetime("now", "localtime")), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)');
+      
+      // Insert demo user
+      const insertUser = prepare('INSERT INTO users (email, name) VALUES (?, ?)');
+      const result = insertUser.run('demo@example.com', 'Demo User');
+      
+      // Insert sample favorite phrases
+      const insertPhrase = prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)');
+      insertPhrase.run(result.lastInsertRowid, '살아있는 것은 아름답다. 그것이 무엇이든.', '백석');
+      insertPhrase.run(result.lastInsertRowid, '나는 매일 새로운 사람이 되고 싶다.', '윤동주');
+      insertPhrase.run(result.lastInsertRowid, '천천히, 그러나 멈추지 않고', '괴테');
+      
+      console.log('✅ Demo data initialized successfully!');
+    } else {
+      console.log('✅ Demo data already exists');
+    }
+  } catch (error) {
+    console.error('⚠️  Error initializing demo data:', error);
+  }
+}
+
+// Run initialization
+await ensureDemoData();
 
 const app = new Hono();
 

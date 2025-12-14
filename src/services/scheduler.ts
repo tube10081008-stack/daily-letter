@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { db } from '../utils/db.js';
+import { prepare } from '../utils/db.js';
 import { generateLetter } from './gemini.js';
 import { sendDailyLetter } from './mailer.js';
 import type { DiaryEntry, FavoritePhrase, User } from '../utils/db.js';
@@ -8,25 +8,25 @@ export async function processAndSendLetters(): Promise<void> {
   console.log('\n🔔 Starting daily letter processing...');
   
   try {
-    // Get yesterday's unsent diaries
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    const diaries = db.prepare(`
+    // Get unsent diaries from the last 7 days (flexible for testing and real use)
+    const diaries = prepare(`
       SELECT de.*, u.email, u.name
       FROM diary_entries de
       JOIN users u ON de.user_id = u.id
-      WHERE DATE(de.created_at) = DATE(?)
-        AND de.sent_at IS NULL
-    `).all(yesterdayStr) as (DiaryEntry & User)[];
+      WHERE de.sent_at IS NULL
+      ORDER BY de.created_at DESC
+    `).all() as (DiaryEntry & User)[];
 
     console.log(`📝 Found ${diaries.length} diary entries to process`);
+
+    if (diaries.length === 0) {
+      console.log('ℹ️  No diary entries found. Make sure to write a diary first!');
+    }
 
     for (const diary of diaries) {
       try {
         // Get a random favorite phrase for this user
-        const phrase = db.prepare(`
+        const phrase = prepare(`
           SELECT * FROM favorite_phrases
           WHERE user_id = ?
           ORDER BY RANDOM()
@@ -41,12 +41,13 @@ export async function processAndSendLetters(): Promise<void> {
         console.log(`🤖 Generating letter for ${diary.email}...`);
 
         // Generate letter content with AI
-const letterContent = await generateLetter(
-  diary.content,
-  diary.mood || null,
-  phrase.content,
-  phrase.author || null
-);
+        const letterContent = await generateLetter(
+          diary.content,
+          diary.mood || null,
+          phrase.content,
+          phrase.author || null
+        );
+
         // Send email
         const today = new Date().toLocaleDateString('ko-KR', {
           year: 'numeric',
@@ -64,7 +65,7 @@ const letterContent = await generateLetter(
 
         if (emailSent) {
           // Mark diary as sent
-          db.prepare(`
+          prepare(`
             UPDATE diary_entries
             SET sent_at = datetime('now', 'localtime')
             WHERE id = ?
