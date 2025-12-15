@@ -37,7 +37,11 @@ auth.post('/signup', async (c) => {
 
     const userId = result.lastInsertRowid as number;
 
-    const token = generateToken({ userId, username, email });
+    const token = generateToken({
+      userId,
+      username,
+      email
+    });
 
     return c.json({
       success: true,

@@ -1,98 +1,102 @@
 import cron from 'node-cron';
-import { prepare } from '../utils/db.js';
-import { generateLetter } from './gemini.js';
+import { db } from '../utils/db.js';
 import { sendDailyLetter } from './mailer.js';
-import type { DiaryEntry, FavoritePhrase, User } from '../utils/db.js';
+import { generateLetter } from './gemini.js';
 
-export async function processAndSendLetters(): Promise<void> {
-  console.log('\n🔔 Starting daily letter processing...');
-  
+let isProcessing = false;
+
+export async function processAndSendLetters() {
+  if (isProcessing) {
+    console.log('⏳ Letter processing already in progress, skipping...');
+    return;
+  }
+
+  isProcessing = true;
+
   try {
-    // Get unsent diaries from the last 7 days (flexible for testing and real use)
-    const diaries = prepare(`
-      SELECT de.*, u.email, u.name
+    console.log('🔔 Starting daily letter processing...');
+
+    // 발송되지 않은 모든 일기 조회
+    const unsentDiaries = db.prepare(`
+      SELECT de.*, u.id as user_id, u.email, u.name 
       FROM diary_entries de
       JOIN users u ON de.user_id = u.id
       WHERE de.sent_at IS NULL
-      ORDER BY de.created_at DESC
-    `).all() as (DiaryEntry & User)[];
+    `).all() as any[];
 
-    console.log(`📝 Found ${diaries.length} diary entries to process`);
+    console.log(`📝 Found ${unsentDiaries.length} diary entries to process`);
 
-    if (diaries.length === 0) {
-      console.log('ℹ️  No diary entries found. Make sure to write a diary first!');
+    if (unsentDiaries.length === 0) {
+      console.log('🎉 No diaries to process');
+      return;
     }
 
-    for (const diary of diaries) {
+    // 각 일기에 대해 처리
+    for (const diary of unsentDiaries) {
       try {
-        // Get a random favorite phrase for this user
-        const phrase = prepare(`
-          SELECT * FROM favorite_phrases
-          WHERE user_id = ?
-          ORDER BY RANDOM()
-          LIMIT 1
-        `).get(diary.user_id) as FavoritePhrase | undefined;
+        console.log(`🎯 Processing diary for user: ${diary.name || diary.email}`);
 
-        if (!phrase) {
-          console.log(`⚠️  No favorite phrases found for user ${diary.user_id}`);
-          continue;
-        }
+        // 사용자의 명언 조회
+        const phrases = db.prepare(
+          'SELECT * FROM favorite_phrases WHERE user_id = ?'
+        ).all(diary.user_id);
 
-        console.log(`🤖 Generating letter for ${diary.email}...`);
+        // 랜덤 명언 선택
+        const randomPhrase = phrases.length > 0 
+          ? phrases[Math.floor(Math.random() * phrases.length)] as any
+          : { content: '오늘도 좋은 하루 되세요', author: '익명' };
 
-        // Generate letter content with AI
+        // AI 편지 생성
         const letterContent = await generateLetter(
           diary.content,
-          diary.mood || null,
-          phrase.content,
-          phrase.author || null
+          diary.mood || '평온함',
+          randomPhrase.content,
+          randomPhrase.author || '작자미상'
         );
 
-        // Send email
-        const today = new Date().toLocaleDateString('ko-KR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          weekday: 'long'
-        });
+        console.log('✅ Letter generated successfully');
 
-        const emailSent = await sendDailyLetter({
-          recipientEmail: diary.email,
-          recipientName: diary.name,
-          date: today,
+        // 이메일 발송
+        const emailSent = await sendDailyLetter(
+          diary.email,
+          diary.name,
           letterContent
-        });
+        );
 
         if (emailSent) {
-          // Mark diary as sent
-          prepare(`
-            UPDATE diary_entries
-            SET sent_at = datetime('now', 'localtime')
-            WHERE id = ?
-          `).run(diary.id);
+          // 발송 완료 표시
+          db.prepare(
+            'UPDATE diary_entries SET sent_at = ? WHERE id = ?'
+          ).run(new Date().toISOString(), diary.id);
 
           console.log(`✅ Letter sent successfully to ${diary.email}`);
+          console.log(`📧 Marked diary #${diary.id} as sent`);
         } else {
-          console.log(`❌ Failed to send letter to ${diary.email}`);
+          console.error(`❌ Failed to send letter to ${diary.email}`);
         }
 
       } catch (error) {
-        console.error(`❌ Error processing diary ${diary.id}:`, error);
+        console.error(`❌ Error processing diary #${diary.id}:`, error);
       }
     }
 
-    console.log('🎉 Daily letter processing complete!\n');
+    console.log('🎉 Daily letter processing complete!');
+
   } catch (error) {
-    console.error('❌ Fatal error in letter processing:', error);
+    console.error('❌ Error in processAndSendLetters:', error);
+  } finally {
+    isProcessing = false;
   }
 }
 
-export function startScheduler(): void {
-  // Run every day at 7:00 AM (Asia/Seoul timezone)
-  cron.schedule('0 7 * * *', processAndSendLetters, {
+export function startScheduler() {
+  // 매일 오전 7시 (Asia/Seoul) 실행
+  cron.schedule('0 7 * * *', async () => {
+    console.log('⏰ Scheduled task triggered at 7:00 AM (Asia/Seoul)');
+    await processAndSendLetters();
+  }, {
     timezone: 'Asia/Seoul'
   });
 
-  console.log('⏰ Scheduler started: Daily at 7:00 AM (Asia/Seoul)');
-  console.log('📅 Cron expression: 0 7 * * *');
+  console.log('⏰ Scheduler initialized: Daily at 7:00 AM (Asia/Seoul)');
 }

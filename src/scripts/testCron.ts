@@ -1,37 +1,33 @@
-import { config } from 'dotenv';
-import { prepare } from '../utils/db.js';
+import dotenv from 'dotenv';
+import { db } from '../utils/db.js';
 
-config();
+dotenv.config();
 
-console.log('🧪 Daily Condition Letter - Prerequisites Check\n');
+console.log('🧪 Testing Cron Job Prerequisites...\n');
 
-// Check environment variables
-console.log('📝 Environment Variables:');
-console.log(`   GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✅ SET' : '❌ NOT SET'}`);
-console.log(`   GMAIL_USER: ${process.env.GMAIL_USER ? '✅ SET' : '❌ NOT SET'}`);
-console.log(`   GMAIL_APP_PASSWORD: ${process.env.GMAIL_APP_PASSWORD ? '✅ SET' : '❌ NOT SET'}`);
-console.log(`   PORT: ${process.env.PORT || '3000'}\n`);
+// 1. Database 확인
+console.log('1️⃣ Checking Database...');
+const users = db.prepare('SELECT * FROM users WHERE email = ?').get('demo@example.com') as any;
+console.log('   Users:', users ? 'Found demo user' : 'No demo user');
 
-// Check database
-console.log('💾 Database Check:');
-const user = prepare('SELECT * FROM users WHERE id = ?').get(1);
-console.log(`   Demo user exists: ${user ? '✅ YES' : '❌ NO'}`);
+const diaries = db.prepare('SELECT * FROM diary_entries WHERE sent_at IS NULL').all();
+console.log('   Unsent diaries:', diaries.length);
 
-if (user) {
-  const phrases = prepare('SELECT * FROM favorite_phrases WHERE user_id = ?').all(1);
-  const diaries = prepare('SELECT * FROM diary_entries WHERE user_id = ?').all(1);
-  
-  console.log(`   Favorite phrases: ${phrases.length}`);
-  console.log(`   Recent diaries: ${diaries.length}\n`);
+const phrases = db.prepare('SELECT * FROM favorite_phrases').all();
+console.log('   Phrases:', phrases.length);
+
+// 2. Environment Variables 확인
+console.log('\n2️⃣ Checking Environment Variables...');
+console.log('   SENDGRID_API_KEY:', process.env.SENDGRID_API_KEY ? '✅ Set' : '❌ Missing');
+console.log('   SENDGRID_FROM_EMAIL:', process.env.SENDGRID_FROM_EMAIL || '❌ Missing');
+console.log('   GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Missing');
+
+// 3. Scheduler 테스트
+console.log('\n3️⃣ Testing Scheduler Logic...');
+if (diaries.length > 0) {
+  console.log('   ✅ Ready to send', diaries.length, 'letters');
+} else {
+  console.log('   ℹ️  No unsent diaries found');
 }
 
-// Instructions
-console.log('📋 Test Instructions:');
-console.log('1. Ensure you have at least one diary entry and one favorite phrase');
-console.log('2. Configure .env with actual credentials:');
-console.log('   - GEMINI_API_KEY=your-gemini-api-key');
-console.log('   - GMAIL_USER=your-email@gmail.com');
-console.log('   - GMAIL_APP_PASSWORD=your-16-char-app-password\n');
-console.log('3. Start the server: npm run dev');
-console.log('4. Test immediately: curl -X POST http://localhost:3000/api/trigger-now');
-console.log('5. Or wait for scheduled run: Daily at 7:00 AM (Asia/Seoul)\n');
+console.log('\n✅ Test complete!');

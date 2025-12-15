@@ -9,6 +9,13 @@ export interface JWTPayload {
   email: string;
 }
 
+// Hono Context에 user 타입 확장
+declare module 'hono' {
+  interface ContextVariableMap {
+    user: JWTPayload;
+  }
+}
+
 // JWT 토큰 생성
 export function generateToken(payload: JWTPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
