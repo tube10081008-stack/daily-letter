@@ -28,6 +28,8 @@ const SYSTEM_PROMPT = `
 - '~습니다', '~세요' 형식
 - 각 문장 끝에 \\n\\n 추가
 - 따뜻하고 친근한 톤
+- **마침표(.) 뒤에는 반드시 줄바꿈(<br><br>)을 추가하세요** ⬅️ 🆕 강조
+- 문장 간 자연스러운 연결을 유지하세요
 `;
 
 export async function generateLetter(
