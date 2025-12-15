@@ -3,51 +3,50 @@ import { db } from '../utils/db.js';
 
 const diary = new Hono();
 
-// Save diary entry
+// 일기 저장
 diary.post('/', async (c) => {
   try {
-    const { content, mood } = await c.req.json();
-    const userId = 1; // Demo user ID
+    const user = c.get('user');
+    const userId = user?.userId || 1;
 
-    if (!content || content.trim().length === 0) {
-      return c.json({ error: 'Diary content is required' }, 400);
+    const { content, mood } = await c.req.json();
+
+    if (!content) {
+      return c.json({ error: 'Content is required' }, 400);
     }
 
-    const stmt = db.prepare(
+    const result = db.prepare(
       'INSERT INTO diary_entries (user_id, content, mood) VALUES (?, ?, ?)'
-    );
-    const result = stmt.run(userId, content.trim(), mood || null);
+    ).run(userId, content, mood || null);
 
     return c.json({
       success: true,
-      message: 'Diary saved successfully! Letter will be sent tomorrow at 7 AM.',
-      diaryId: result.lastInsertRowid
-    }, 201);
+      message: 'Diary saved successfully',
+      diaryId: result.lastInsertRowid,
+      scheduledFor: '내일 오전 7시'
+    });
   } catch (error) {
-    console.error('Error saving diary:', error);
+    console.error('❌ Error saving diary:', error);
     return c.json({ error: 'Failed to save diary' }, 500);
   }
 });
 
-// Get recent diary entries
-diary.get('/recent', (c) => {
+// 최근 일기 조회
+diary.get('/recent', async (c) => {
   try {
-    const userId = 1; // Demo user ID
-    const limit = parseInt(c.req.query('limit') || '5');
+    const user = c.get('user');
+    const userId = user?.userId || 1;
 
-    const stmt = db.prepare(`
-      SELECT id, content, mood, created_at, sent_at
-      FROM diary_entries
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-      LIMIT ?
-    `);
+    const limit = Number(c.req.query('limit')) || 10;
 
-    const entries = stmt.all(userId, limit);
-    return c.json({ entries });
+    const entries = db.prepare(
+      'SELECT * FROM diary_entries WHERE user_id = ? ORDER BY created_at DESC LIMIT ?'
+    ).all(userId, limit);
+
+    return c.json({ success: true, entries });
   } catch (error) {
-    console.error('Error fetching diary entries:', error);
-    return c.json({ error: 'Failed to fetch diary entries' }, 500);
+    console.error('❌ Error fetching diaries:', error);
+    return c.json({ error: 'Failed to fetch diaries' }, 500);
   }
 });
 

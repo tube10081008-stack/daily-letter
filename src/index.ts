@@ -1,105 +1,94 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import { serveStatic } from '@hono/node-server/serve-static';
 import { cors } from 'hono/cors';
-import { config } from 'dotenv';
-import diary from './routes/diary.js';
-import phrases from './routes/phrases.js';
-import { startScheduler, processAndSendLetters } from './services/scheduler.js';
-import { testMailerConnection } from './services/mailer.js';
+import { serveStatic } from '@hono/node-server/serve-static';
+import dotenv from 'dotenv';
+import { db } from './utils/db.js';
+import diaryRoutes from './routes/diary.js';
+import phraseRoutes from './routes/phrases.js';
+import authRoutes from './routes/auth.js';
+import { authMiddleware } from './middleware/auth.js';
+import { startScheduler } from './services/scheduler.js';
 
-config();
-// Auto-initialize database with demo data on startup
-import { prepare, exec } from './utils/db.js';
-
-async function ensureDemoData() {
-  try {
-    // Check if demo user exists
-    const existingUser = prepare('SELECT id FROM users WHERE email = ?').get('demo@example.com');
-    
-    if (!existingUser) {
-      console.log('🔧 Initializing database with demo data...');
-      
-      // Create tables (in case they don't exist)
-      exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, created_at TEXT DEFAULT (datetime("now", "localtime")))');
-      exec('CREATE TABLE IF NOT EXISTS diary_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, content TEXT NOT NULL, mood TEXT, created_at TEXT DEFAULT (datetime("now", "localtime")), sent_at TEXT, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)');
-      exec('CREATE TABLE IF NOT EXISTS favorite_phrases (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, content TEXT NOT NULL, author TEXT, created_at TEXT DEFAULT (datetime("now", "localtime")), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)');
-      
-      // Insert demo user
-      const insertUser = prepare('INSERT INTO users (email, name) VALUES (?, ?)');
-      const result = insertUser.run('demo@example.com', '성현');
-      
-      // Insert sample favorite phrases
-      const insertPhrase = prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)');
-      insertPhrase.run(result.lastInsertRowid, '살아있는 것은 아름답다. 그것이 무엇이든.', '백석');
-      insertPhrase.run(result.lastInsertRowid, '나는 매일 새로운 사람이 되고 싶다.', '윤동주');
-      insertPhrase.run(result.lastInsertRowid, '천천히, 그러나 멈추지 않고', '괴테');
-      
-      console.log('✅ Demo data initialized successfully!');
-    } else {
-      console.log('✅ Demo data already exists');
-    }
-  } catch (error) {
-    console.error('⚠️  Error initializing demo data:', error);
-  }
-}
-
-// Run initialization
-await ensureDemoData();
+dotenv.config();
 
 const app = new Hono();
 
-// Middleware
+// CORS 설정
 app.use('/*', cors());
 
-// Serve static files
-app.use('/static/*', serveStatic({ root: './' }));
-app.use('/', serveStatic({ path: './static/index.html' }));
+// 정적 파일 제공
+app.use('/*', serveStatic({ root: './static' }));
 
-// API Routes
-app.route('/api/diary', diary);
-app.route('/api/phrases', phrases);
+// 인증 라우트 (JWT 불필요)
+app.route('/api/auth', authRoutes);
+
+// 보호된 라우트 (JWT 필요)
+app.use('/api/diary/*', authMiddleware);
+app.use('/api/phrases/*', authMiddleware);
+
+app.route('/api/diary', diaryRoutes);
+app.route('/api/phrases', phraseRoutes);
 
 // Health check
 app.get('/api/health', (c) => {
-  return c.json({
+  return c.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString(),
-    scheduler: 'running'
+    scheduler: 'running',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Manual trigger for testing
+// 수동 트리거
 app.post('/api/trigger-now', async (c) => {
-  try {
-    await processAndSendLetters();
-    return c.json({ success: true, message: 'Letter processing triggered manually' });
-  } catch (error) {
-    console.error('Manual trigger error:', error);
-    return c.json({ error: 'Failed to trigger letter processing' }, 500);
-  }
+  const { processAndSendLetters } = await import('./services/scheduler.js');
+  await processAndSendLetters();
+  return c.json({ 
+    success: true, 
+    message: 'Letter processing triggered manually' 
+  });
 });
 
-// Start server
-const port = parseInt(process.env.PORT || '3000');
-
-console.log('🚀 Starting Daily Condition Letter System...\n');
-
-// Test email connection
-testMailerConnection().then((connected) => {
-  if (!connected) {
-    console.warn('⚠️  Warning: Gmail connection not verified. Check your .env credentials.\n');
+// 데모 데이터 초기화
+function ensureDemoData() {
+  const demoUser = db.prepare('SELECT * FROM users WHERE email = ?').get('demo@example.com');
+  
+  if (!demoUser) {
+    console.log('🔧 Initializing demo data...');
+    
+    db.prepare('INSERT INTO users (email, name, username, password_hash) VALUES (?, ?, ?, ?)').run(
+      'demo@example.com',
+      '성현',
+      null,
+      null
+    );
+    
+    db.prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)').run(
+      1,
+      '삶이 있는 한 희망은 있다.',
+      '키케로'
+    );
+    
+    db.prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)').run(
+      1,
+      '산다는것 그것은 치열한 전투이다.',
+      '로망로랑'
+    );
+    
+    console.log('✅ Demo data initialized');
   }
-});
+}
 
-// Start scheduler
+ensureDemoData();
+
+// Scheduler 시작
 startScheduler();
+
+const port = Number(process.env.PORT) || 3000;
+
+console.log(`🚀 Server is running on http://localhost:${port}`);
 
 serve({
   fetch: app.fetch,
   port
 });
-
-console.log(`\n✅ Server is running on http://localhost:${port}`);
-console.log(`📊 Health check: http://localhost:${port}/api/health`);
-console.log(`🧪 Manual trigger: POST http://localhost:${port}/api/trigger-now\n`);

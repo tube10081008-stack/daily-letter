@@ -1,52 +1,67 @@
-import nodemailer from 'nodemailer';
-import { config } from 'dotenv';
-import { generateEmailHTML } from '../templates/email.js';
-import type { LetterContent } from './gemini.js';
+import sgMail from '@sendgrid/mail';
+import dotenv from 'dotenv';
 
-config();
+dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com';
+const SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || '오늘의 편지';
 
-export interface EmailData {
-  recipientEmail: string;
-  recipientName: string;
-  date: string;
-  letterContent: LetterContent;
+if (!SENDGRID_API_KEY) {
+  console.warn('⚠️  SENDGRID_API_KEY is not set');
+} else {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log('✅ SendGrid API initialized');
 }
 
-export async function sendDailyLetter(data: EmailData): Promise<boolean> {
-  try {
-    const htmlContent = generateEmailHTML(data);
+interface EmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+}
 
-    const mailOptions = {
-      from: `"Daily Condition Letter" <${process.env.GMAIL_USER}>`,
-      to: data.recipientEmail,
-      subject: `${data.date} - 오늘의 편지가 도착했습니다 💌`,
-      html: htmlContent,
+export async function sendEmail({ to, subject, html }: EmailOptions): Promise<boolean> {
+  try {
+    if (!SENDGRID_API_KEY) {
+      console.error('❌ SendGrid API Key is missing');
+      return false;
+    }
+
+    const msg = {
+      to,
+      from: {
+        email: SENDGRID_FROM_EMAIL,
+        name: SENDGRID_FROM_NAME
+      },
+      subject,
+      html
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully: ${info.messageId}`);
+    await sgMail.send(msg);
+    console.log(`✅ Email sent successfully to ${to}`);
     return true;
-  } catch (error) {
-    console.error('❌ Email sending failed:', error);
+
+  } catch (error: any) {
+    console.error('❌ SendGrid error:', error.response?.body || error.message);
     return false;
   }
 }
 
-export async function testMailerConnection(): Promise<boolean> {
-  try {
-    await transporter.verify();
-    console.log('✅ Gmail SMTP connection verified');
-    return true;
-  } catch (error) {
-    console.error('❌ Gmail SMTP connection failed:', error);
-    return false;
-  }
+export async function sendDailyLetter(
+  recipientEmail: string,
+  recipientName: string,
+  letterContent: any
+): Promise<boolean> {
+  const { generateEmailHTML } = await import('../templates/email.js');
+  
+  const subject = `${new Date().toLocaleDateString('ko-KR', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    weekday: 'long'
+  })} - 오늘의 편지가 도착했습니다 💌`;
+
+  const html = generateEmailHTML(recipientName, letterContent);
+
+  return await sendEmail({ to: recipientEmail, subject, html });
 }

@@ -3,68 +3,63 @@ import { db } from '../utils/db.js';
 
 const phrases = new Hono();
 
-// Get all favorite phrases
-phrases.get('/', (c) => {
+// 모든 명언 조회
+phrases.get('/', async (c) => {
   try {
-    const userId = 1; // Demo user ID
+    const user = c.get('user');
+    const userId = user?.userId || 1;
 
-    const stmt = db.prepare(`
-      SELECT id, content, author, created_at
-      FROM favorite_phrases
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `);
+    const allPhrases = db.prepare(
+      'SELECT * FROM favorite_phrases WHERE user_id = ?'
+    ).all(userId);
 
-    const allPhrases = stmt.all(userId);
-    return c.json({ phrases: allPhrases });
+    return c.json({ success: true, phrases: allPhrases });
   } catch (error) {
-    console.error('Error fetching phrases:', error);
+    console.error('❌ Error fetching phrases:', error);
     return c.json({ error: 'Failed to fetch phrases' }, 500);
   }
 });
 
-// Add new favorite phrase
+// 명언 추가
 phrases.post('/', async (c) => {
   try {
-    const { content, author } = await c.req.json();
-    const userId = 1; // Demo user ID
+    const user = c.get('user');
+    const userId = user?.userId || 1;
 
-    if (!content || content.trim().length === 0) {
-      return c.json({ error: 'Phrase content is required' }, 400);
+    const { content, author } = await c.req.json();
+
+    if (!content) {
+      return c.json({ error: 'Content is required' }, 400);
     }
 
-    const stmt = db.prepare(
+    const result = db.prepare(
       'INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)'
-    );
-    const result = stmt.run(userId, content.trim(), author?.trim() || null);
+    ).run(userId, content, author || null);
 
     return c.json({
       success: true,
-      message: 'Favorite phrase added successfully!',
+      message: 'Phrase added successfully',
       phraseId: result.lastInsertRowid
-    }, 201);
+    });
   } catch (error) {
-    console.error('Error adding phrase:', error);
+    console.error('❌ Error adding phrase:', error);
     return c.json({ error: 'Failed to add phrase' }, 500);
   }
 });
 
-// Delete favorite phrase
-phrases.delete('/:id', (c) => {
+// 명언 삭제
+phrases.delete('/:id', async (c) => {
   try {
-    const phraseId = parseInt(c.req.param('id'));
-    const userId = 1; // Demo user ID
+    const id = Number(c.req.param('id'));
 
-    const stmt = db.prepare('DELETE FROM favorite_phrases WHERE id = ? AND user_id = ?');
-    const result = stmt.run(phraseId, userId);
+    db.prepare('DELETE FROM favorite_phrases WHERE id = ?').run(id);
 
-    if (result.changes === 0) {
-      return c.json({ error: 'Phrase not found' }, 404);
-    }
-
-    return c.json({ success: true, message: 'Phrase deleted successfully' });
+    return c.json({
+      success: true,
+      message: 'Phrase deleted successfully'
+    });
   } catch (error) {
-    console.error('Error deleting phrase:', error);
+    console.error('❌ Error deleting phrase:', error);
     return c.json({ error: 'Failed to delete phrase' }, 500);
   }
 });
