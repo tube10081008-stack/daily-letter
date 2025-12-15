@@ -91,8 +91,8 @@ JSON 형식:
       if (!text) return text;
       
       return text
-        .replace(/\[BREAK\]/g, '<br><br>&nbsp;&nbsp;&nbsp;&nbsp;') // [BREAK] → 줄바꿈 + 들여쓰기
-        .replace(/\.\s+/g, '.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;') // 마침표 + 공백 → 줄바꿈 + 들여쓰기
+        .replace(/\[BREAK\]/g, '<br><br>;') // [BREAK] → 줄바꿈 + 들여쓰기
+        .replace(/\.\s+/g, '.<br><br>;') // 마침표 + 공백 → 줄바꿈 + 들여쓰기
         .trim();
     };
 
@@ -110,12 +110,12 @@ JSON 형식:
 
     // Fallback - 기본 템플릿 (안전장치)
     return {
-      intro: `안녕하세요 ${user.name}님!<br><br>&nbsp;&nbsp;&nbsp;&nbsp;오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
-      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
+      intro: `안녕하세요 ${user.name}님!<br><br>\;오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br><br>;일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
+      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br><br>;일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br><br>;그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
       phraseFeedback: phrases.length > 0
-        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
+        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br><br>;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
         : undefined,
-      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;좋은 하루 보내세요!`
+      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br><br>;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br><br>;좋은 하루 보내세요!`
     };
   }
 }
