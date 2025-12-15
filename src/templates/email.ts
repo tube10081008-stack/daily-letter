@@ -1,8 +1,15 @@
-export function generateEmailHTML(recipientName: string, letterContent: any): string {
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('ko-KR', { 
-    year: 'numeric', 
-    month: 'long', 
+export function generateEmailHTML(
+  recipientName: string,
+  letterContent: {
+    intro: string;
+    diaryFeedback: string;
+    phraseFeedback?: string;
+    outro: string;
+  }
+): string {
+  const today = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     weekday: 'long'
   });
@@ -15,149 +22,155 @@ export function generateEmailHTML(recipientName: string, letterContent: any): st
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오늘의 편지</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
-      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      margin: 0;
       padding: 40px 20px;
       line-height: 1.8;
     }
-    .container {
-      max-width: 600px;
+    
+    .email-container {
+      max-width: 800px; /* 🆕 기존보다 넓게 (600px → 800px) */
       margin: 0 auto;
       background: white;
-      border-radius: 20px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
+    
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 40px 30px;
       text-align: center;
     }
+    
     .header h1 {
-      margin: 0 0 10px 0;
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .header .emoji {
-      font-size: 40px;
       margin-bottom: 10px;
     }
+    
     .header p {
-      margin: 0;
-      opacity: 0.95;
       font-size: 16px;
+      opacity: 0.95;
     }
+    
     .content {
-      padding: 40px 35px;
+      padding: 50px 60px; /* 🆕 좌우 여백 증가 (40px → 60px) */
+      color: #2d3748;
     }
+    
     .greeting {
       font-size: 20px;
-      color: #333;
-      margin-bottom: 30px;
       font-weight: 600;
-      border-left: 4px solid #667eea;
-      padding-left: 15px;
-    }
-    .section {
-      margin-bottom: 35px;
-      background: #f8f9ff;
-      padding: 25px;
-      border-radius: 12px;
-      border-left: 4px solid #667eea;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: 700;
       color: #667eea;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
+      margin-bottom: 30px;
     }
-    .section-title .icon {
-      font-size: 24px;
-      margin-right: 8px;
-    }
-    .section-content {
+    
+    .section {
+      margin-bottom: 40px;
       font-size: 16px;
-      line-height: 2;
-      color: #444;
-      white-space: pre-line;
+      color: #4a5568;
     }
-    .quote {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 4px solid #764ba2;
+    
+    .section p {
+      margin-bottom: 16px;
+      line-height: 2.0; /* 🆕 줄간격 증가 */
+    }
+    
+    /* 🆕 일반 본문 스타일 (콜아웃 아님) */
+    .text-block {
+      background: #f7fafc;
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 4px solid #e2e8f0;
       margin: 20px 0;
-      font-style: italic;
-      color: #555;
     }
+    
+    /* 🆕 강조용 콜아웃 (중간에 한 번만 사용) */
+    .callout {
+      background: linear-gradient(135deg, #fef5e7 0%, #fdebd0 100%);
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 4px solid #f39c12;
+      margin: 30px 0;
+      box-shadow: 0 2px 8px rgba(243, 156, 18, 0.1);
+    }
+    
+    .callout strong {
+      color: #e67e22;
+      font-weight: 700;
+    }
+    
     .footer {
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: #f7fafc;
       padding: 30px;
       text-align: center;
-      color: #666;
-    }
-    .footer p {
-      margin: 5px 0;
+      color: #718096;
       font-size: 14px;
+      border-top: 1px solid #e2e8f0;
     }
-    .footer .copyright {
-      margin-top: 15px;
-      font-size: 13px;
-      color: #999;
+    
+    .footer p {
+      margin: 8px 0;
+    }
+    
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="email-container">
     <div class="header">
-      <div class="emoji">💌</div>
-      <h1>Daily Condition Letter</h1>
-      <p>${dateStr}</p>
+      <h1>💌 오늘의 편지가 도착했습니다</h1>
+      <p>${today}</p>
     </div>
     
     <div class="content">
       <div class="greeting">
-        ${recipientName}님께,
+        ${recipientName}님, 안녕하세요! 👋
       </div>
-
+      
+      <!-- 인트로 -->
       <div class="section">
-        <div class="section-title">
-          <span class="icon">🌅</span> 오늘의 이야기
-        </div>
-        <div class="section-content">${letterContent.intro || '오늘도 소중한 하루를 보내셨네요.'}</div>
+        ${letterContent.intro}
       </div>
-
+      
+      <!-- 일기 피드백 (일반 본문) -->
       <div class="section">
-        <div class="section-title">
-          <span class="icon">📝</span> 일기에 대한 이야기
+        <div class="text-block">
+          ${letterContent.diaryFeedback}
         </div>
-        <div class="section-content">${letterContent.diaryFeedback || '당신의 이야기를 들려주셔서 감사합니다.'}</div>
       </div>
-
+      
+      <!-- 명언 피드백 (강조 콜아웃 - 중간에 한 번만) -->
+      ${letterContent.phraseFeedback ? `
       <div class="section">
-        <div class="section-title">
-          <span class="icon">✨</span> 오늘의 문장
+        <div class="callout">
+          ${letterContent.phraseFeedback}
         </div>
-        <div class="section-content">${letterContent.phraseFeedback || '오늘도 힘내세요!'}</div>
       </div>
-
-      <div class="quote">
-        ${letterContent.outro || '내일도 좋은 하루 되세요.'}
+      ` : ''}
+      
+      <!-- 아웃트로 -->
+      <div class="section">
+        ${letterContent.outro}
       </div>
     </div>
     
     <div class="footer">
-      <p>💌 매일 오전 7시, 당신을 위한 편지가 도착합니다</p>
-      <p class="copyright">Daily Condition Letter © 2025</p>
+      <p>이 편지는 AI가 당신의 일기를 바탕으로 작성했습니다.</p>
+      <p>매일 아침 7시, 따뜻한 편지로 하루를 시작하세요.</p>
+      <p><a href="https://daily-letter.onrender.com">Daily Condition Letter</a></p>
     </div>
   </div>
 </body>
 </html>
-  `;
+  `.trim();
 }
