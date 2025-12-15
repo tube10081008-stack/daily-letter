@@ -1,16 +1,18 @@
-import type { EmailData } from '../services/mailer.js';
-
-export function generateEmailHTML(data: EmailData): string {
-  const { recipientName, date, letterContent } = data;
-  
-  // 마침표 뒤에 줄바꿈 추가하는 함수
-  const formatText = (text: string) => {
-    return text
-      .split('. ')
-      .filter(s => s.trim())
-      .map(sentence => `<p style="margin-bottom: 16px;">${sentence.trim()}.</p>`)
-      .join('');
-  };
+export function generateEmailHTML(
+  recipientName: string,
+  letterContent: {
+    intro: string;
+    diaryFeedback: string;
+    phraseFeedback?: string;
+    outro: string;
+  }
+): string {
+  const today = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  });
 
   return `
 <!DOCTYPE html>
@@ -18,133 +20,218 @@ export function generateEmailHTML(data: EmailData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Condition Letter</title>
+  <title>오늘의 편지</title>
   <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
     body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-      background-color: #f5f5f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px 0;
+      line-height: 1.8;
     }
-    .container {
+    
+    .email-container {
       max-width: 600px;
-      margin: 40px auto;
-      background-color: #ffffff;
-      border-radius: 12px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 0;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: none;
     }
+    
+    @media (min-width: 640px) {
+      body {
+        padding: 40px 20px;
+      }
+      .email-container {
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+    }
+    
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px 30px;
-      text-align: center;
       color: white;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .header .date {
-      margin-top: 10px;
-      font-size: 14px;
-      opacity: 0.9;
-    }
-    .content {
-      padding: 40px 30px;
-      line-height: 1.8;
-      color: #333;
-    }
-    .greeting {
-      font-size: 16px;
-      margin-bottom: 30px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #667eea;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #f0f0f0;
-    }
-    .section-content {
-      font-size: 15px;
-      color: #555;
-    }
-    .section-content p {
-      margin-bottom: 16px;
-      line-height: 1.8;
-    }
-    .quote-box {
-      background: #f9f9f9;
-      border-left: 4px solid #667eea;
-      padding: 20px;
-      margin: 20px 0;
-      font-style: italic;
-    }
-    .quote-box p {
-      margin-bottom: 16px;
-      line-height: 1.8;
-    }
-    .footer {
-      background-color: #f9f9f9;
-      padding: 30px;
+      padding: 32px 20px;
       text-align: center;
-      font-size: 13px;
-      color: #888;
     }
+    
+    @media (min-width: 640px) {
+      .header {
+        padding: 40px 30px;
+      }
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    @media (min-width: 640px) {
+      .header h1 {
+        font-size: 28px;
+      }
+    }
+    
+    .header p {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+    
+    @media (min-width: 640px) {
+      .header p {
+        font-size: 16px;
+      }
+    }
+    
+    .content {
+      padding: 32px 24px;
+      color: #2d3748;
+    }
+    
+    @media (min-width: 640px) {
+      .content {
+        padding: 50px 60px;
+      }
+    }
+    
+    .greeting {
+      font-size: 18px;
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    
+    @media (min-width: 640px) {
+      .greeting {
+        font-size: 20px;
+        margin-bottom: 30px;
+      }
+    }
+    
+    .section {
+      margin-bottom: 32px;
+      font-size: 15px;
+      color: #4a5568;
+      text-align: left;
+      line-height: 2.0;
+    }
+    
+    @media (min-width: 640px) {
+      .section {
+        font-size: 16px;
+        margin-bottom: 40px;
+      }
+    }
+    
+    .section p {
+      margin-bottom: 0;
+    }
+    
+    .text-block {
+      background: transparent;
+      padding: 0;
+      border: none;
+      margin: 0;
+    }
+    
+    .callout {
+      background: linear-gradient(135deg, #fef5e7 0%, #fdebd0 100%);
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid #f39c12;
+      margin: 24px 0;
+      box-shadow: 0 2px 8px rgba(243, 156, 18, 0.1);
+    }
+    
+    @media (min-width: 640px) {
+      .callout {
+        padding: 24px;
+        margin: 30px 0;
+      }
+    }
+    
+    .callout strong {
+      color: #e67e22;
+      font-weight: 700;
+    }
+    
+    .footer {
+      background: #f7fafc;
+      padding: 24px 20px;
+      text-align: center;
+      color: #718096;
+      font-size: 13px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    @media (min-width: 640px) {
+      .footer {
+        padding: 30px;
+        font-size: 14px;
+      }
+    }
+    
+    .footer p {
+      margin: 8px 0;
+    }
+    
     .footer a {
       color: #667eea;
       text-decoration: none;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="email-container">
     <div class="header">
-      <h1>💌 Daily Condition Letter</h1>
-      <div class="date">${date}</div>
+      <h1>💌 오늘의 편지가 도착했습니다</h1>
+      <p>${today}</p>
     </div>
-
+    
     <div class="content">
       <div class="greeting">
-        안녕하세요, ${recipientName}님
+        ${recipientName}님, 안녕하세요! 👋
       </div>
-
+      
       <div class="section">
-        <div class="section-content">
-          ${formatText(letterContent.intro)}
+        ${letterContent.intro}
+      </div>
+      
+      <div class="section">
+        <div class="text-block">
+          ${letterContent.diaryFeedback}
         </div>
       </div>
-
+      
+      ${letterContent.phraseFeedback ? `
       <div class="section">
-        <div class="section-title">📔 어제의 당신에게</div>
-        <div class="section-content">
-          ${formatText(letterContent.diaryFeedback)}
+        <div class="callout">
+          ${letterContent.phraseFeedback}
         </div>
       </div>
-
-      <div class="quote-box">
-        ${formatText(letterContent.phraseFeedback)}
-      </div>
-
+      ` : ''}
+      
       <div class="section">
-        <div class="section-content">
-          ${formatText(letterContent.outro)}
-        </div>
+        ${letterContent.outro}
       </div>
     </div>
-
+    
     <div class="footer">
-      <p>이 편지는 매일 아침 7시에 자동으로 발송됩니다.</p>
-      <p>Daily Condition Letter © 2024</p>
+      <p>이 편지는 AI가 당신의 일기를 바탕으로 작성했습니다.</p>
+      <p>매일 아침 7시, 따뜻한 편지로 하루를 시작하세요.</p>
+      <p><a href="https://daily-letter.onrender.com">Daily Condition Letter</a></p>
     </div>
   </div>
 </body>
 </html>
-  `;
+  `.trim();
 }
