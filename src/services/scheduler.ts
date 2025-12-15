@@ -82,17 +82,17 @@ async function sendDailyLetter(
     // HTML 이메일 생성
     const emailHTML = generateEmailHTML(user.name, letterContent);
 
-    // 이메일 발송
-    await sendEmail(
-      user.email,
-      `${new Date().toLocaleDateString('ko-KR', { 
+    // 이메일 발송 (객체 형태로 전달)
+    await sendEmail({
+      to: user.email,
+      subject: `${new Date().toLocaleDateString('ko-KR', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric',
         weekday: 'long'
       })} - 오늘의 편지가 도착했습니다 💌`,
-      emailHTML
-    );
+      html: emailHTML
+    });
 
     console.log(`📧 Email sent successfully to ${user.email}`);
   } catch (error) {
