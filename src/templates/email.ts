@@ -191,6 +191,7 @@ export function generateEmailHTML(
   </style>
 </head>
 <body>
+  <!-- Gmail/Outlook용 모던 버전 -->
   <div class="email-container">
     <div class="header">
       <h1>💌 오늘의 편지가 도착했습니다</h1>
@@ -231,6 +232,77 @@ export function generateEmailHTML(
       <p><a href="https://daily-letter.onrender.com">Daily Condition Letter</a></p>
     </div>
   </div>
+  
+  <!-- 네이버/다음용 Fallback (Inline CSS) -->
+  <!--[if mso]>
+  <style>
+    .email-container { display: none !important; }
+  </style>
+  <![endif]-->
+  
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; display: none;">
+    <tr>
+      <td style="background-color: #667eea; color: #ffffff; padding: 40px 30px; text-align: center;">
+        <h1 style="margin: 0 0 10px 0; font-size: 24px; font-weight: 700;">💌 오늘의 편지가 도착했습니다</h1>
+        <p style="margin: 0; font-size: 14px;">${today}</p>
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 32px 24px 0 24px;">
+        <div style="font-size: 18px; font-weight: 600; color: #667eea; margin-bottom: 24px; text-align: center;">
+          ${recipientName}님, 안녕하세요! 👋
+        </div>
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 0 24px 32px 24px; font-size: 15px; color: #4a5568; line-height: 2.0;">
+        ${letterContent.intro}
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 0 24px 32px 24px; font-size: 15px; color: #4a5568; line-height: 2.0;">
+        ${letterContent.diaryFeedback}
+      </td>
+    </tr>
+    
+    ${letterContent.phraseFeedback ? `
+    <tr>
+      <td style="padding: 0 24px 32px 24px;">
+        <div style="background-color: #fef5e7; padding: 20px; border-radius: 12px; border-left: 4px solid #f39c12; font-size: 15px; color: #4a5568; line-height: 2.0;">
+          ${letterContent.phraseFeedback}
+        </div>
+      </td>
+    </tr>
+    ` : ''}
+    
+    <tr>
+      <td style="padding: 0 24px 32px 24px; font-size: 15px; color: #4a5568; line-height: 2.0;">
+        ${letterContent.outro}
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="background-color: #f7fafc; padding: 24px 20px; text-align: center; color: #718096; font-size: 13px; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 8px 0;">이 편지는 AI가 당신의 일기를 바탕으로 작성했습니다.</p>
+        <p style="margin: 8px 0;">매일 아침 7시, 따뜻한 편지로 하루를 시작하세요.</p>
+        <p style="margin: 8px 0;">
+          <a href="https://daily-letter.onrender.com" style="color: #667eea; text-decoration: none; font-weight: 600;">Daily Condition Letter</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+  
+  <script>
+    // 네이버/다음 감지 시 Fallback 활성화
+    if (navigator.userAgent.indexOf('Naver') > -1 || navigator.userAgent.indexOf('Daum') > -1) {
+      document.querySelector('.email-container').style.display = 'none';
+      document.querySelector('table').style.display = 'table';
+    }
+  </script>
+  
 </body>
 </html>
   `.trim();
