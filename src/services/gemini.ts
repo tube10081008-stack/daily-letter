@@ -74,7 +74,7 @@ ${phrasesText}
 
 **필수 규칙:**
 - 모든 마침표(.) 뒤에 [BREAK] 태그 삽입
-- [BREAK]는 나중에 <br><br>로 변환됨
+- [BREAK]는 나중에 <br>로 변환됨
 - 각 섹션 마지막에도 [BREAK] 추가
 `;
 
@@ -96,13 +96,13 @@ ${phrasesText}
     const letterContent: LetterContent = JSON.parse(jsonText);
     console.log('✅ JSON parsed successfully');
 
-    // [BREAK] → <br><br> 변환 (들여쓰기 없이!)
+    // [BREAK] → <br> 변환 (한 줄 바꿈만)
     const processContent = (text: string): string => {
       if (!text) return text;
       
       return text
-        .replace(/\[BREAK\]/g, '<br><br>') // [BREAK] → 줄바꿈만
-        .replace(/\.\s+/g, '.<br><br>') // 마침표 + 공백 → 줄바꿈만
+        .replace(/\[BREAK\]/g, '<br>') // [BREAK] → 한 줄 바꿈
+        .replace(/\.\s+/g, '.<br>') // 마침표 + 공백 → 한 줄 바꿈
         .trim();
     };
 
@@ -120,12 +120,12 @@ ${phrasesText}
     
     // Fallback response
     return {
-      intro: `안녕하세요 ${user.name}님!<br><br>오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br><br>일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
-      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br><br>일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br><br>그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
+      intro: `안녕하세요 ${user.name}님!<br>오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br>일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
+      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br>일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br>그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
       phraseFeedback: phrases.length > 0
-        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br><br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
+        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
         : undefined,
-      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br><br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br><br>좋은 하루 보내세요!`
+      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br>좋은 하루 보내세요!`
     };
   }
 }

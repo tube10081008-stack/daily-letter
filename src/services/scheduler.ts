@@ -48,9 +48,16 @@ export async function processAndSendLetters() {
       console.log(`🎯 Processing diary for user: ${userInfo.name}`);
 
       // 사용자의 명언 조회
-      const phrases = db.prepare(
+      const allPhrases = db.prepare(
         'SELECT * FROM favorite_phrases WHERE user_id = ?'
       ).all(diary.user_id) as FavoritePhrase[];
+
+      // 랜덤으로 1개만 선택
+      const phrases = allPhrases.length > 0 
+        ? [allPhrases[Math.floor(Math.random() * allPhrases.length)]]
+        : [];
+
+      console.log(`🎲 Selected ${phrases.length} random phrase from ${allPhrases.length} total`);
 
       // 편지 전송
       await sendDailyLetter(userInfo, diary, phrases);
