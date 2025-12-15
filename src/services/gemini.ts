@@ -1,80 +1,121 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import type { User, DiaryEntry, FavoritePhrase } from '../utils/db.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-const SYSTEM_PROMPT = `
-당신은 따뜻하고 공감 능력이 뛰어난 편지 작가입니다.
+const SYSTEM_PROMPT = `당신은 사용자의 일기를 읽고 따뜻하고 공감적인 편지를 작성하는 AI입니다.
 
-사용자의 일기를 읽고, 그들의 감정에 공감하며, 
-좋아하는 문장을 해석하여 위로와 격려가 담긴 편지를 작성합니다.
+**작성 규칙:**
+1. 반드시 JSON 형식으로 응답하세요
+2. 각 섹션은 3-5문장으로 구성하세요
+3. **매우 중요: 마침표(.) 뒤에는 반드시 [BREAK] 태그를 삽입하세요**
+   - 예: "안녕하세요.[BREAK]오늘 하루는 어떠셨나요?[BREAK]일기를 읽어보니..."
+4. 문장 간 자연스러운 연결을 유지하세요
+5. 따뜻하고 공감적인 어조를 사용하세요
 
-편지는 다음 형식의 JSON으로 작성하되, 각 필드는 **문단으로 나뉘어야 합니다**:
-- 마침표(.) 뒤에는 반드시 줄바꿈(\\n\\n)을 추가하세요.
-- 각 문장이 독립된 문단처럼 보이게 작성하세요.
-
+**JSON 출력 형식 (반드시 [BREAK] 태그 사용):**
 {
-  "intro": "일기에 대한 첫 인사와 공감 (2-3문장, 각 문장 뒤 \\n\\n)",
-  "diaryFeedback": "일기 내용에 대한 따뜻한 피드백 (3-4문장, 각 문장 뒤 \\n\\n)",
-  "phraseFeedback": "좋아하는 문장에 대한 해석과 응원 (2-3문장, 각 문장 뒤 \\n\\n)",
-  "outro": "마무리 인사와 격려 (1-2문장, 각 문장 뒤 \\n\\n)"
+  "intro": "안녕하세요 {{name}}님![BREAK]오늘 하루는 어떠셨나요?[BREAK]일기를 읽어보니 정말 뿌듯한 하루를 보내셨네요.[BREAK]",
+  "diaryFeedback": "일기 속 당신의 마음이 느껴집니다.[BREAK]그런 감정을 느끼셨다니 정말 소중한 경험이네요.[BREAK]당신의 성장이 느껴져 저도 기쁩니다.[BREAK]",
+  "phraseFeedback": "좋아하시는 명언이네요.[BREAK]이 말씀처럼 당신도 그런 삶을 살아가고 계십니다.[BREAK]",
+  "outro": "오늘도 응원합니다.[BREAK]좋은 하루 보내세요![BREAK]내일 또 만나요.[BREAK]"
 }
 
-**중요:**
-- 반말 금지, 존댓말 사용
-- '~습니다', '~세요' 형식
-- 각 문장 끝에 \\n\\n 추가
-- 따뜻하고 친근한 톤
-- **마침표(.) 뒤에는 반드시 줄바꿈(<br><br>)을 추가하세요** ⬅️ 🆕 강조
-- 문장 간 자연스러운 연결을 유지하세요
-`;
+**필수 규칙:**
+- 모든 마침표(.) 뒤에 [BREAK] 태그 삽입
+- [BREAK]는 나중에 <br><br>로 변환됨
+- 각 섹션 마지막에도 [BREAK] 추가`;
 
 export async function generateLetter(
-  diaryContent: string,
-  mood: string,
-  phraseContent: string,
-  phraseAuthor: string
-): Promise<any> {
+  user: User,
+  diary: DiaryEntry,
+  phrases: FavoritePhrase[]
+): Promise<{
+  intro: string;
+  diaryFeedback: string;
+  phraseFeedback?: string;
+  outro: string;
+}> {
   try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    // 명언 정보 포맷팅
+    const phrasesText = phrases.length > 0
+      ? phrases.map(p => `- "${p.content}" (${p.author || '작자미상'})`).join('\n')
+      : '(저장된 명언 없음)';
+
     const prompt = `
-${SYSTEM_PROMPT}
+사용자 정보:
+- 이름: ${user.name}
+- 이메일: ${user.email}
 
-일기 내용: ${diaryContent}
-기분: ${mood}
-좋아하는 문장: "${phraseContent}" - ${phraseAuthor}
+최근 일기:
+"${diary.content}"
+(기분: ${diary.mood || '기록 안 함'})
 
-위 정보를 바탕으로 따뜻한 편지를 JSON 형식으로 작성해주세요.
-각 문장 끝에 반드시 \\n\\n을 추가하여 문단을 나눠주세요.
-`;
+좋아하는 명언:
+${phrasesText}
 
+위 정보를 바탕으로 따뜻하고 공감적인 편지를 JSON 형식으로 작성하세요.
+반드시 모든 마침표(.) 뒤에 [BREAK] 태그를 삽입하세요.
+
+JSON 형식:
+{
+  "intro": "인사말 3문장 (각 마침표 뒤 [BREAK])",
+  "diaryFeedback": "일기 피드백 3-4문장 (각 마침표 뒤 [BREAK])",
+  "phraseFeedback": "명언 피드백 2-3문장 (각 마침표 뒤 [BREAK], 명언 없으면 생략)",
+  "outro": "마무리 인사 2-3문장 (각 마침표 뒤 [BREAK])"
+}
+    `.trim();
+
+    console.log('🤖 Calling Gemini API...');
     const result = await model.generateContent(prompt);
-    const response = result.response;
+    const response = await result.response;
     const text = response.text();
 
-    // JSON 추출
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+    console.log('📄 Gemini raw response:', text.substring(0, 200) + '...');
+
+    // JSON 파싱 (```json``` 태그 제거)
+    let jsonText = text.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '');
     }
 
-    // Fallback
+    const letterContent = JSON.parse(jsonText);
+    console.log('✅ JSON parsed successfully');
+
+    // 🆕 [BREAK] → <br><br> 변환 + 들여쓰기 추가
+    const processContent = (text: string): string => {
+      if (!text) return text;
+      
+      return text
+        .replace(/\[BREAK\]/g, '<br><br>&nbsp;&nbsp;&nbsp;&nbsp;') // [BREAK] → 줄바꿈 + 들여쓰기
+        .replace(/\.\s+/g, '.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;') // 마침표 + 공백 → 줄바꿈 + 들여쓰기
+        .trim();
+    };
+
     return {
-      intro: `안녕하세요.\n\n오늘도 소중한 이야기를 들려주셔서 감사합니다.\n\n`,
-      diaryFeedback: `${mood} 기분으로 하루를 보내셨군요.\n\n당신의 이야기를 읽으며 많은 생각이 들었습니다.\n\n`,
-      phraseFeedback: `"${phraseContent}"라는 문장을 좋아하신다니, 당신의 마음이 느껴집니다.\n\n${phraseAuthor}의 이 말처럼, 오늘도 힘내세요.\n\n`,
-      outro: `내일도 좋은 하루 되세요.\n\n`
+      intro: processContent(letterContent.intro),
+      diaryFeedback: processContent(letterContent.diaryFeedback),
+      phraseFeedback: letterContent.phraseFeedback 
+        ? processContent(letterContent.phraseFeedback) 
+        : undefined,
+      outro: processContent(letterContent.outro)
     };
 
   } catch (error) {
     console.error('❌ Gemini API error:', error);
+
+    // Fallback - 기본 템플릿 (안전장치)
     return {
-      intro: `안녕하세요.\n\n오늘도 일기를 작성해주셔서 감사합니다.\n\n`,
-      diaryFeedback: `당신의 하루가 소중합니다.\n\n`,
-      phraseFeedback: `좋아하는 문장처럼, 오늘도 힘내세요.\n\n`,
-      outro: `내일도 응원합니다.\n\n`
+      intro: `안녕하세요 ${user.name}님!<br><br>&nbsp;&nbsp;&nbsp;&nbsp;오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
+      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
+      phraseFeedback: phrases.length > 0
+        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
+        : undefined,
+      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br><br>&nbsp;&nbsp;&nbsp;&nbsp;좋은 하루 보내세요!`
     };
   }
 }
