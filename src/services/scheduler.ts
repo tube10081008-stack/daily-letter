@@ -17,12 +17,9 @@ export async function processAndSendLetters() {
     console.log('🔔 Starting daily letter processing...');
 
     // 발송되지 않은 모든 일기 조회
-    const unsentDiaries = db.prepare(`
-      SELECT de.*, u.id as user_id, u.email, u.name 
-      FROM diary_entries de
-      JOIN users u ON de.user_id = u.id
-      WHERE de.sent_at IS NULL
-    `).all() as any[];
+    const unsentDiaries = db.prepare(
+      'SELECT * FROM diary_entries WHERE sent_at IS NULL'
+    ).all() as any[];
 
     console.log(`📝 Found ${unsentDiaries.length} diary entries to process`);
 
@@ -34,12 +31,20 @@ export async function processAndSendLetters() {
     // 각 일기에 대해 처리
     for (const diary of unsentDiaries) {
       try {
-        console.log(`🎯 Processing diary for user: ${diary.name || diary.email}`);
+        // 사용자 정보 조회
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(diary.user_id) as any;
+
+        if (!user) {
+          console.error(`❌ User not found for diary #${diary.id}`);
+          continue;
+        }
+
+        console.log(`🎯 Processing diary for user: ${user.name || user.email}`);
 
         // 사용자의 명언 조회
         const phrases = db.prepare(
           'SELECT * FROM favorite_phrases WHERE user_id = ?'
-        ).all(diary.user_id);
+        ).all(user.id);
 
         // 랜덤 명언 선택
         const randomPhrase = phrases.length > 0 
@@ -58,8 +63,8 @@ export async function processAndSendLetters() {
 
         // 이메일 발송
         const emailSent = await sendDailyLetter(
-          diary.email,
-          diary.name,
+          user.email,
+          user.name,
           letterContent
         );
 
@@ -69,10 +74,10 @@ export async function processAndSendLetters() {
             'UPDATE diary_entries SET sent_at = ? WHERE id = ?'
           ).run(new Date().toISOString(), diary.id);
 
-          console.log(`✅ Letter sent successfully to ${diary.email}`);
+          console.log(`✅ Letter sent successfully to ${user.email}`);
           console.log(`📧 Marked diary #${diary.id} as sent`);
         } else {
-          console.error(`❌ Failed to send letter to ${diary.email}`);
+          console.error(`❌ Failed to send letter to ${user.email}`);
         }
 
       } catch (error) {
