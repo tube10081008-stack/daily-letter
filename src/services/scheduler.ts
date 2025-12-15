@@ -1,102 +1,98 @@
 import cron from 'node-cron';
-import { db } from '../utils/db.js';
-import type { User, DiaryEntry, FavoritePhrase } from '../utils/db.js';
+import { prepare } from '../utils/db.js';
 import { generateLetter } from './gemini.js';
-import { sendEmail } from './mailer.js';
-import { generateEmailHTML } from '../templates/email.js';
+import { sendDailyLetter } from './mailer.js';
+import type { DiaryEntry, FavoritePhrase, User } from '../utils/db.js';
 
-// 매일 오전 7시 (한국 시간) 실행
-export function startScheduler() {
-  console.log('📅 Scheduler initialized - Daily letters at 7:00 AM KST');
-
-  // 테스트: 매분마다 실행 (개발용)
-  // cron.schedule('* * * * *', async () => {
-  //   console.log('⏰ Running scheduled task (every minute for testing)...');
-  //   await processAndSendLetters();
-  // });
-
-  // 프로덕션: 매일 오전 7시 실행
-  cron.schedule('0 7 * * *', async () => {
-    console.log('⏰ Running scheduled task at 7:00 AM KST...');
-    await processAndSendLetters();
-  }, {
-    timezone: 'Asia/Seoul'
-  });
-}
-
-// 일기 처리 및 이메일 발송
-export async function processAndSendLetters() {
-  console.log('🔔 Starting daily letter processing...');
-
+export async function processAndSendLetters(): Promise<void> {
+  console.log('\n🔔 Starting daily letter processing...');
+  
   try {
-    // 미발송 일기 조회
-    const pendingDiaries = db.prepare(
-      'SELECT * FROM diary_entries WHERE sent_at IS NULL'
-    ).all() as DiaryEntry[];
+    // Get unsent diaries from the last 7 days (flexible for testing and real use)
+    const diaries = prepare(`
+      SELECT de.*, u.email, u.name
+      FROM diary_entries de
+      JOIN users u ON de.user_id = u.id
+      WHERE de.sent_at IS NULL
+      ORDER BY de.created_at DESC
+    `).all() as (DiaryEntry & User)[];
 
-    console.log(`📝 Found ${pendingDiaries.length} diary entries to process`);
+    console.log(`📝 Found ${diaries.length} diary entries to process`);
 
-    for (const diary of pendingDiaries) {
-      // 사용자 정보 조회
-      const userInfo = db.prepare('SELECT * FROM users WHERE id = ?').get(diary.user_id) as User;
-
-      if (!userInfo) {
-        console.log(`⚠️ User not found for diary ${diary.id}`);
-        continue;
-      }
-
-      console.log(`🎯 Processing diary for user: ${userInfo.name}`);
-
-      // 사용자의 명언 조회
-      const phrases = db.prepare(
-        'SELECT * FROM favorite_phrases WHERE user_id = ?'
-      ).all(diary.user_id) as FavoritePhrase[];
-
-      // 편지 전송
-      await sendDailyLetter(userInfo, diary, phrases);
-
-      // 발송 완료 표시
-      db.prepare('UPDATE diary_entries SET sent_at = ? WHERE id = ?')
-        .run(new Date().toISOString(), diary.id);
-
-      console.log(`✅ Letter sent successfully to ${userInfo.email}`);
+    if (diaries.length === 0) {
+      console.log('ℹ️  No diary entries found. Make sure to write a diary first!');
     }
 
-    console.log('🎉 Daily letter processing complete!');
+    for (const diary of diaries) {
+      try {
+        // Get a random favorite phrase for this user
+        const phrase = prepare(`
+          SELECT * FROM favorite_phrases
+          WHERE user_id = ?
+          ORDER BY RANDOM()
+          LIMIT 1
+        `).get(diary.user_id) as FavoritePhrase | undefined;
+
+        if (!phrase) {
+          console.log(`⚠️  No favorite phrases found for user ${diary.user_id}`);
+          continue;
+        }
+
+        console.log(`🤖 Generating letter for ${diary.email}...`);
+
+        // Generate letter content with AI
+        const letterContent = await generateLetter(
+          diary.content,
+          diary.mood || null,
+          phrase.content,
+          phrase.author || null
+        );
+
+        // Send email
+        const today = new Date().toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long'
+        });
+
+        const emailSent = await sendDailyLetter({
+          recipientEmail: diary.email,
+          recipientName: diary.name,
+          date: today,
+          letterContent
+        });
+
+        if (emailSent) {
+          // Mark diary as sent
+          prepare(`
+            UPDATE diary_entries
+            SET sent_at = datetime('now', 'localtime')
+            WHERE id = ?
+          `).run(diary.id);
+
+          console.log(`✅ Letter sent successfully to ${diary.email}`);
+        } else {
+          console.log(`❌ Failed to send letter to ${diary.email}`);
+        }
+
+      } catch (error) {
+        console.error(`❌ Error processing diary ${diary.id}:`, error);
+      }
+    }
+
+    console.log('🎉 Daily letter processing complete!\n');
   } catch (error) {
-    console.error('❌ Error in processAndSendLetters:', error);
+    console.error('❌ Fatal error in letter processing:', error);
   }
 }
 
-// 개별 이메일 발송
-async function sendDailyLetter(
-  user: User,
-  diary: DiaryEntry,
-  phrases: FavoritePhrase[]
-) {
-  try {
-    // AI 편지 생성
-    const letterContent = await generateLetter(user, diary, phrases);
-    console.log('✅ Letter generated successfully');
+export function startScheduler(): void {
+  // Run every day at 7:00 AM (Asia/Seoul timezone)
+  cron.schedule('0 7 * * *', processAndSendLetters, {
+    timezone: 'Asia/Seoul'
+  });
 
-    // HTML 이메일 생성
-    const emailHTML = generateEmailHTML(user.name, letterContent);
-
-    // 이메일 발송 (객체 형태로 전달)
-    await sendEmail({
-      to: user.email,
-      subject: `${new Date().toLocaleDateString('ko-KR', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        weekday: 'long'
-      })} - 오늘의 편지가 도착했습니다 💌`,
-      html: emailHTML
-    });
-
-    console.log(`📧 Email sent successfully to ${user.email}`);
-  } catch (error) {
-    console.error(`❌ Failed to send letter to ${user.email}:`, error);
-    throw error;
-  }
+  console.log('⏰ Scheduler started: Daily at 7:00 AM (Asia/Seoul)');
+  console.log('📅 Cron expression: 0 7 * * *');
 }
