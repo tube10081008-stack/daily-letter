@@ -3,63 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Condition Letter</title>
+  <title>Daily Condition Letter - 나만의 감성 일기장</title>
   <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>📝 오늘의 일기</h1>
-      <button onclick="logout()" class="logout-btn">로그아웃</button>
-    </header>
-
-    <section class="diary-section">
-      <h2>일기 작성</h2>
-      <form id="diaryForm">
-        <div class="form-group">
-          <label for="content">오늘의 일기:</label>
-          <textarea id="content" name="content" rows="8" required></textarea>
+  
+  <!-- 헤더 -->
+  <header class="main-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <h1>💌 Daily Condition Letter</h1>
         </div>
-
-        <div class="form-group">
-          <label for="mood">기분:</label>
-          <select id="mood" name="mood">
-            <option value="행복함">😊 행복함</option>
-            <option value="평온함">😌 평온함</option>
-            <option value="우울함">😢 우울함</option>
-            <option value="화남">😠 화남</option>
-            <option value="불안함">😰 불안함</option>
-          </select>
+        <div class="user-menu">
+          <span class="user-greeting">안녕하세요, <strong id="userName">로딩중...</strong>님 👋</span>
+          <button onclick="logout()" class="btn-secondary">로그아웃</button>
         </div>
+      </div>
+    </div>
+  </header>
 
-        <button type="submit" class="btn">저장</button>
-      </form>
-    </section>
-
-    <section class="phrase-section">
-      <h2>💭 사랑하는 문장</h2>
+  <main class="container">
+    
+    <!-- 통계 카드 섹션 -->
+    <section class="stats-section">
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-content">
+          <div class="stat-value" id="diaryCount">0</div>
+          <div class="stat-label">작성한 일기</div>
+        </div>
+      </div>
       
-      <form id="phraseForm">
-        <div class="form-group">
-          <label for="phraseContent">문장:</label>
-          <input type="text" id="phraseContent" name="phraseContent" required>
+      <div class="stat-card">
+        <div class="stat-icon">💌</div>
+        <div class="stat-content">
+          <div class="stat-value" id="letterCount">0</div>
+          <div class="stat-label">받은 편지</div>
         </div>
-
-        <div class="form-group">
-          <label for="phraseAuthor">작가:</label>
-          <input type="text" id="phraseAuthor" name="phraseAuthor">
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-content">
+          <div class="stat-value" id="phraseCount">0</div>
+          <div class="stat-label">저장한 명언</div>
         </div>
-
-        <button type="submit" class="btn">추가</button>
-      </form>
-
-      <h3>내가 사랑한 문장</h3>
-      <ul id="phrasesList"></ul>
+      </div>
     </section>
 
-    <footer>
-      <p>💌 매일 오전 7시에 AI가 생성한 편지를 이메일로 받아보세요</p>
-    </footer>
+    <!-- 감정 차트 -->
+    <section class="chart-section">
+      <h2 class="section-title">🎭 최근 7일 감정</h2>
+      <div class="chart-container">
+        <canvas id="emotionChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 일기 작성 -->
+    <section class="diary-section">
+      <h2 class="section-title">✍️ 오늘의 일기 작성</h2>
+      <div class="diary-card">
+        <textarea 
+          id="diaryContent" 
+          placeholder="오늘 하루는 어떠셨나요? 마음 편하게 적어보세요..."
+          rows="8"
+        ></textarea>
+        
+        <div class="mood-selector">
+          <label>오늘의 기분:</label>
+          <div class="mood-options">
+            <button class="mood-btn" data-mood="행복함" title="행복함">😊</button>
+            <button class="mood-btn" data-mood="평온함" title="평온함">😌</button>
+            <button class="mood-btn" data-mood="우울함" title="우울함">😔</button>
+            <button class="mood-btn" data-mood="설렘" title="설렘">🤗</button>
+            <button class="mood-btn" data-mood="피곤함" title="피곤함">😴</button>
+            <button class="mood-btn" data-mood="화남" title="화남">😠</button>
+            <button class="mood-btn" data-mood="고민중" title="고민중">🤔</button>
+            <button class="mood-btn" data-mood="신남" title="신남">🎉</button>
+            <button class="mood-btn" data-mood="불안함" title="불안함">😰</button>
+          </div>
+          <input type="hidden" id="selectedMood" value="">
+        </div>
+        
+        <button onclick="saveDiary()" class="btn-primary btn-large">
+          저장하기 💾
+        </button>
+        
+        <p class="diary-tip">💡 편지는 내일 오전 7시에 전송됩니다</p>
+      </div>
+    </section>
+
+    <!-- 명언 컬렉션 -->
+    <section class="phrases-section">
+      <div class="section-header">
+        <h2 class="section-title">💭 나만의 명언 컬렉션</h2>
+        <button onclick="showAddPhraseModal()" class="btn-secondary">+ 새 명언 추가</button>
+      </div>
+      
+      <div class="phrases-grid" id="phrasesGrid">
+        <!-- JavaScript로 동적 생성 -->
+      </div>
+    </section>
+
+    <!-- 최근 일기 -->
+    <section class="recent-section">
+      <h2 class="section-title">📅 최근 작성한 일기</h2>
+      <div class="timeline" id="recentDiaries">
+        <!-- JavaScript로 동적 생성 -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 명언 추가 모달 -->
+  <div id="addPhraseModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>새로운 명언 추가</h3>
+        <button onclick="closeAddPhraseModal()" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <textarea 
+          id="newPhraseContent" 
+          placeholder="마음에 드는 명언이나 문장을 입력하세요..."
+          rows="4"
+        ></textarea>
+        <input 
+          type="text" 
+          id="newPhraseAuthor" 
+          placeholder="작가 또는 출처 (선택사항)"
+        >
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeAddPhraseModal()" class="btn-secondary">취소</button>
+        <button onclick="addPhrase()" class="btn-primary">추가하기</button>
+      </div>
+    </div>
   </div>
 
   <script src="/app.js"></script>
