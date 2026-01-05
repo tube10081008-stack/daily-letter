@@ -4,241 +4,126 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>회원가입 - Daily Condition Letter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .container {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      padding: 40px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    h1 {
-      color: #667eea;
-      text-align: center;
-      margin-bottom: 10px;
-      font-size: 28px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #333;
-      font-weight: 500;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-    }
-
-    .btn:active {
-      transform: translateY(0);
-    }
-
-    .error {
-      color: #e74c3c;
-      background: #ffe0e0;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      display: none;
-    }
-
-    .success {
-      color: #27ae60;
-      background: #d4edda;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      display: none;
-    }
-
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      color: #666;
-      font-size: 14px;
-    }
-
-    .footer a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    .hint {
-      font-size: 12px;
-      color: #999;
-      margin-top: 4px;
-    }
+    body { font-family: 'Noto Sans KR', sans-serif; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1>✨ 회원가입</h1>
-    <p class="subtitle">오늘의 편지 시스템</p>
+<body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-screen flex items-center justify-center p-4">
+  
+  <div class="max-w-md w-full">
+    <!-- 로고 -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        📮 Daily Letter
+      </h1>
+      <p class="text-gray-600 mt-2">AI가 전하는 나만의 편지</p>
+    </div>
 
-    <div id="error" class="error"></div>
-    <div id="success" class="success"></div>
+    <!-- 회원가입 카드 -->
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">회원가입</h2>
+      
+      <form id="signupForm">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">이름</label>
+          <input 
+            type="text" 
+            id="name" 
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="이름을 입력하세요"
+          >
+        </div>
 
-    <form id="signupForm">
-      <div class="form-group">
-        <label for="username">아이디</label>
-        <input type="text" id="username" name="username" required>
-        <div class="hint">영문, 숫자 조합 (4자 이상)</div>
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">아이디</label>
+          <input 
+            type="text" 
+            id="username" 
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="아이디를 입력하세요"
+          >
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">이메일</label>
+          <input 
+            type="email" 
+            id="email" 
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="이메일을 입력하세요"
+          >
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-medium mb-2">비밀번호</label>
+          <input 
+            type="password" 
+            id="password" 
+            required
+            minlength="6"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="비밀번호를 입력하세요 (최소 6자)"
+          >
+        </div>
+
+        <button 
+          type="submit"
+          class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
+        >
+          회원가입
+        </button>
+      </form>
+
+      <div class="mt-6 text-center">
+        <p class="text-gray-600">
+          이미 계정이 있으신가요? 
+          <a href="/static/login.html" class="text-purple-600 font-medium hover:underline">로그인</a>
+        </p>
       </div>
-
-      <div class="form-group">
-        <label for="email">이메일</label>
-        <input type="email" id="email" name="email" required>
-        <div class="hint">편지를 받을 이메일 주소</div>
-      </div>
-
-      <div class="form-group">
-        <label for="name">이름</label>
-        <input type="text" id="name" name="name" required>
-        <div class="hint">불러드릴 호칭(예시. 성현)</div>
-      </div>
-
-      <div class="form-group">
-        <label for="password">비밀번호</label>
-        <input type="password" id="password" name="password" required>
-        <div class="hint">6자 이상 입력</div>
-      </div>
-
-      <div class="form-group">
-        <label for="confirmPassword">비밀번호 확인</label>
-        <input type="password" id="confirmPassword" name="confirmPassword" required>
-      </div>
-
-      <button type="submit" class="btn">회원가입</button>
-    </form>
-
-    <div class="footer">
-      이미 계정이 있으신가요? <a href="/login.html">로그인</a>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById('signupForm');
-    const errorDiv = document.getElementById('error');
-    const successDiv = document.getElementById('success');
-
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const username = document.getElementById('username').value;
       const email = document.getElementById('email').value;
       const name = document.getElementById('name').value;
       const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-
-      errorDiv.style.display = 'none';
-      successDiv.style.display = 'none';
-
-      if (password !== confirmPassword) {
-        errorDiv.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
-        errorDiv.style.display = 'block';
-        return;
-      }
-
-      if (password.length < 6) {
-        errorDiv.textContent = '⚠️ 비밀번호는 6자 이상이어야 합니다.';
-        errorDiv.style.display = 'block';
-        return;
-      }
 
       try {
         const response = await fetch('/api/auth/signup', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, name, password })
         });
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (data.success) {
+          alert('회원가입이 완료되었습니다!');
+          
+          // 토큰 저장
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
 
-          successDiv.textContent = '✅ 회원가입 성공! 잠시 후 메인 페이지로 이동합니다...';
-          successDiv.style.display = 'block';
-
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
+          // 메인 페이지로 이동
+          window.location.href = '/static/index.html';
         } else {
-          errorDiv.textContent = data.error || '회원가입에 실패했습니다.';
-          errorDiv.style.display = 'block';
+          alert(data.error || '회원가입에 실패했습니다.');
         }
       } catch (error) {
-        errorDiv.textContent = '서버 연결에 실패했습니다.';
-        errorDiv.style.display = 'block';
+        console.error('Signup error:', error);
+        alert('회원가입 중 오류가 발생했습니다.');
       }
     });
   </script>
+
 </body>
 </html>
