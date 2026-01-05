@@ -271,6 +271,12 @@ async function saveDiary(event) {
   const token = localStorage.getItem('token');
   const content = document.getElementById('diaryContent').value;
 
+  if (!token) {
+    alert('로그인이 필요합니다.');
+    window.location.href = '/static/login.html';
+    return;
+  }
+
   if (!content.trim()) {
     alert('일기 내용을 입력해주세요.');
     return;
@@ -284,7 +290,7 @@ async function saveDiary(event) {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        content,
+        content: content.trim(),
         mood: selectedMood
       })
     });
@@ -300,11 +306,11 @@ async function saveDiary(event) {
       // 대시보드 새로고침
       await loadDashboard();
     } else {
-      alert(data.error || '일기 저장에 실패했습니다.');
+      alert(`오류: ${data.error || '일기 저장에 실패했습니다.'}`);
     }
   } catch (error) {
     console.error('Diary save error:', error);
-    alert('일기 저장 중 오류가 발생했습니다.');
+    alert(`일기 저장 중 오류: ${error.message}`);
   }
 }
 
