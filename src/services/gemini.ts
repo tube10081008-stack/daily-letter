@@ -5,127 +5,94 @@ import type { User, DiaryEntry, FavoritePhrase } from '../utils/db.js';
 config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-export interface LetterContent {
-  intro: string;
-  diaryFeedback: string;
-  phraseFeedback?: string;
-  outro: string;
+const SYSTEM_PROMPT = `당신은 따뜻하고 공감적인 AI 편지 작가입니다.
+사용자의 일기를 읽고, 그들이 좋아하는 명언을 바탕으로 개인화된 편지를 작성합니다.
+
+**핵심 규칙:**
+1) 반드시 JSON 형식으로 응답하세요
+2) 각 섹션은 3-5문장으로 구성하세요
+3) 마침표 뒤에는 줄바꿈만 추가하세요 (들여쓰기 없음)
+4) 문장 간 자연스러운 연결을 유지하세요
+5) 따뜻하고 공감적인 어조를 사용하세요
+
+**출력 형식:**
+{
+  "intro": "인사와 오늘에 대한 따뜻한 말",
+  "diaryFeedback": "일기 내용에 대한 공감과 피드백",
+  "phraseFeedback": "명언에 대한 해석과 격려 (선택적)",
+  "outro": "마무리 인사와 응원"
 }
+
+**예시:**
+{
+  "intro": "성현님, 안녕하세요!<br>아침 햇살처럼 따뜻한 인사를 전합니다.<br>오늘 하루도 성현님의 아름다운 생각들로 가득 채워지길 바라요.",
+  "diaryFeedback": "어제 일기를 읽어보니 새로운 도전에 대한 설렘이 느껴지네요.<br>변화를 두려워하지 않는 성현님의 용기가 정말 멋집니다.<br>그 열정이 앞으로도 계속 빛나길 응원합니다.",
+  "phraseFeedback": "특히 '행복은 습관이다'라는 명언이 마음에 와 닿습니다.<br>작은 행복들을 모아가는 성현님의 모습이 아름답습니다.",
+  "outro": "오늘 하루도 성현님의 빛나는 하루를 응원합니다!<br>마음속 행복을 가득 채우는 하루 보내세요!"
+}`;
 
 export async function generateLetter(
   user: User,
   diary: DiaryEntry,
   phrases: FavoritePhrase[]
-): Promise<LetterContent> {
-  // 명언 정보 포맷팅
-  const phrasesText = phrases.length > 0
-    ? phrases.map(p => `- "${p.content}" (${p.author || '작자미상'})`).join('\n')
-    : '(저장된 명언 없음)';
+): Promise<{ intro: string; diaryFeedback: string; phraseFeedback?: string; outro: string }> {
+  try {
+    const userName = user.name || user.email;
+    const diaryContent = diary.content;
+    const diaryMood = diary.mood || '알 수 없음';
+    const favoritePhrase = phrases.length > 0 
+      ? `"${phrases[0].content}" - ${phrases[0].author || '작자미상'}`
+      : null;
 
-  const prompt = `
-당신은 감성적이고 따뜻한 편지를 쓰는 AI입니다.
-시적인 뉴스레터 스타일로 작성해주세요.
+    const userPrompt = `
+사용자 이름: ${userName}
+일기 내용: ${diaryContent}
+기분: ${diaryMood}
+${favoritePhrase ? `좋아하는 명언: ${favoritePhrase}` : ''}
 
-사용자 정보:
-- 이름: ${user.name}
-- 이메일: ${user.email}
-
-**어제 일기:**
-${diary.content}
-${diary.mood ? `\n**기분:** ${diary.mood}` : ''}
-
-**좋아하는 명언:**
-${phrasesText}
-
----
-
-**작성 규칙:**
-1. 반드시 JSON 형식으로 응답하세요
-2. 각 섹션은 3-5문장으로 구성하세요
-3. **매우 중요: 마침표(.) 뒤에는 반드시 [BREAK] 태그를 삽입하세요**
-   - 예: "안녕하세요.[BREAK]오늘 하루는 어떠셨나요?[BREAK]일기를 읽어보니..."
-4. 문장 간 자연스러운 연결을 유지하세요
-5. 따뜻하고 공감적인 어조를 사용하세요
-
-다음 4가지 섹션으로 편지를 작성해주세요:
-
-1. **intro** (인사말, 2-3문장): 아침 인사와 오늘을 시작하는 따뜻한 말
-2. **diaryFeedback** (일기에 대한 공감과 격려, 3-4문장): 사용자의 어제를 인정하고 공감하며 위로
-3. **phraseFeedback** (좋아하는 명언에 대한 해석과 연결, 3-4문장): 이 문장이 주는 의미와 사용자의 삶과의 연결 (명언 없으면 생략)
-4. **outro** (마무리 인사, 2문장): 오늘 하루를 응원하는 마무리 인사
-
-**톤앤매너:**
-- 시적이고 감성적이지만 과하지 않게
-- 친구처럼 따뜻하게, 하지만 존중하는 어조
-- 구체적인 일기 내용을 언급하며 공감
-- 진부한 표현 피하기
-
-**JSON 출력 형식 (반드시 [BREAK] 태그 사용):**
-\`\`\`json
-{
-  "intro": "안녕하세요 ${user.name}님![BREAK]오늘 하루는 어떠셨나요?[BREAK]일기를 읽어보니...[BREAK]",
-  "diaryFeedback": "일기 속 당신의 마음이 느껴집니다.[BREAK]그런 감정을 느끼셨다니...[BREAK]당신의 성장이 느껴져 저도 기쁩니다.[BREAK]",
-  "phraseFeedback": "좋아하시는 명언이네요.[BREAK]이 말씀처럼 당신도 그런 삶을 살아가고 계십니다.[BREAK]",
-  "outro": "오늘도 응원합니다.[BREAK]좋은 하루 보내세요![BREAK]"
-}
-\`\`\`
-
-**필수 규칙:**
-- 모든 마침표(.) 뒤에 [BREAK] 태그 삽입
-- [BREAK]는 나중에 <br>로 변환됨
-- 각 섹션 마지막에도 [BREAK] 추가
+위 정보를 바탕으로 따뜻하고 개인화된 편지를 JSON 형식으로 작성해주세요.
+${favoritePhrase ? 'phraseFeedback을 포함해주세요.' : 'phraseFeedback은 생략해주세요.'}
 `;
 
-  try {
-    console.log('🤖 Calling Gemini API...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const result = await model.generateContent([
+      { text: SYSTEM_PROMPT },
+      { text: userPrompt }
+    ]);
 
-    console.log('📄 Gemini raw response:', text.substring(0, 200) + '...');
-
-    // Extract JSON from response
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to parse Gemini response');
+    const response = result.response.text();
+    
+    // JSON 파싱
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // 줄바꿈만 유지 (들여쓰기 제거)
+      return {
+        intro: parsed.intro || '',
+        diaryFeedback: parsed.diaryFeedback || '',
+        phraseFeedback: parsed.phraseFeedback,
+        outro: parsed.outro || ''
+      };
     }
 
-    const jsonText = jsonMatch[1] || jsonMatch[0];
-    const letterContent: LetterContent = JSON.parse(jsonText);
-    console.log('✅ JSON parsed successfully');
-
-    // [BREAK] → <br> 변환 (한 줄 바꿈만)
-    const processContent = (text: string): string => {
-      if (!text) return text;
-      
-      return text
-        .replace(/\[BREAK\]/g, '<br>') // [BREAK] → 한 줄 바꿈
-        .replace(/\.\s+/g, '.<br>') // 마침표 + 공백 → 한 줄 바꿈
-        .trim();
-    };
-
+    // 파싱 실패 시 기본 템플릿
     return {
-      intro: processContent(letterContent.intro),
-      diaryFeedback: processContent(letterContent.diaryFeedback),
-      phraseFeedback: letterContent.phraseFeedback 
-        ? processContent(letterContent.phraseFeedback) 
-        : undefined,
-      outro: processContent(letterContent.outro)
+      intro: `${userName}님, 안녕하세요!<br>오늘도 좋은 하루 되세요!`,
+      diaryFeedback: `어제의 일기를 읽어보니 ${userName}님의 하루가 느껴집니다.<br>소중한 기록 감사합니다.`,
+      phraseFeedback: favoritePhrase ? `${userName}님이 좋아하시는 명언처럼, 오늘도 의미 있는 하루 보내세요.` : undefined,
+      outro: `오늘 하루도 행복하세요!<br>언제나 응원합니다.`
     };
 
   } catch (error) {
-    console.error('❌ Gemini API Error:', error);
+    console.error('Gemini API error:', error);
     
-    // Fallback response
+    // 에러 시 기본 편지
     return {
-      intro: `안녕하세요 ${user.name}님!<br>오늘 하루도 평온하게 보내셨다니 정말 다행입니다.<br>일기를 통해 당신의 따뜻한 마음을 느낄 수 있었습니다.`,
-      diaryFeedback: `일기에서 '${diary.mood || '대박'}' 이라는 문장을 보니 소소한 즐거움을 발견하시는 모습이 떠올라 저도 미소짓게 됩니다.<br>일상 속 작은 발견에서 행복을 느끼시는 당신은 분명 긍정적인 에너지를 가진 분이실 겁니다.<br>그런 긍정적인 마음이 당신의 하루를 더욱 풍요롭게 만들어줄 것이라고 생각합니다.`,
-      phraseFeedback: phrases.length > 0
-        ? `평온함 속에서 작은 행복을 발견하는 당신의 능력이 부럽습니다.<br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.`
-        : undefined,
-      outro: `오늘도 당신의 따뜻한 마음 덕분에 저 또한 위로를 받았습니다.<br>앞으로도 당신의 평온함이 늘 함께하기를 진심으로 바랍니다.<br>좋은 하루 보내세요!`
+      intro: `${user.name || user.email}님, 안녕하세요!`,
+      diaryFeedback: `어제의 일기를 잘 읽었습니다.<br>소중한 하루를 기록해주셨네요.`,
+      outro: `오늘도 좋은 하루 되세요!`
     };
   }
 }
