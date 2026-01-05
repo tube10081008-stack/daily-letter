@@ -1,87 +1,102 @@
 import { Hono } from 'hono';
-import bcrypt from 'bcrypt';
+import { sign, verify } from 'hono/jwt';
 import { db } from '../utils/db.js';
-import { generateToken } from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
 
-const auth = new Hono();
+const app = new Hono();
+
+// Environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Types
+interface CustomJWTPayload {
+  userId: number;
+  username: string;
+  exp: number;
+  [key: string]: any;
+}
 
 // 회원가입
-auth.post('/signup', async (c) => {
+app.post('/signup', async (c) => {
   try {
     const { username, email, name, password } = await c.req.json();
 
+    // Validation
     if (!username || !email || !name || !password) {
       return c.json({ error: 'All fields are required' }, 400);
     }
 
-    if (password.length < 6) {
-      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    // Check if user already exists
+    if (db.checkUserExists(username, email)) {
+      return c.json({ error: 'Username or email already exists' }, 409);
     }
 
-    const existingUsername = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-    if (existingUsername) {
-      return c.json({ error: 'Username already exists' }, 409);
-    }
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    const existingEmail = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    if (existingEmail) {
-      return c.json({ error: 'Email already exists' }, 409);
-    }
+    // Insert user
+    const userId = db.createUserWithPassword(username, email, name, passwordHash);
 
-    const saltRounds = 10;
-    const password_hash = await bcrypt.hash(password, saltRounds);
-
-    const result = db.prepare(
-      'INSERT INTO users (email, name, username, password_hash) VALUES (?, ?, ?, ?)'
-    ).run(email, name, username, password_hash);
-
-    const userId = result.lastInsertRowid as number;
-
-    const token = generateToken({
-      userId,
-      username,
-      email
-    });
+    // Generate JWT token
+    const token = await sign(
+      {
+        userId,
+        username,
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+      },
+      JWT_SECRET
+    );
 
     return c.json({
       success: true,
       message: 'User created successfully',
       token,
-      user: { id: userId, username, email, name }
-    }, 201);
+      user: {
+        id: userId,
+        username,
+        email,
+        name
+      }
+    });
 
   } catch (error) {
-    console.error('❌ Signup error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('Signup error:', error);
+    return c.json({ error: 'Failed to create user' }, 500);
   }
 });
 
 // 로그인
-auth.post('/login', async (c) => {
+app.post('/login', async (c) => {
   try {
     const { username, password } = await c.req.json();
 
+    // Validation
     if (!username || !password) {
       return c.json({ error: 'Username and password are required' }, 400);
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username) as any;
+    // Get user
+    const user = db.getUserByUsername(username);
 
     if (!user) {
-      return c.json({ error: 'Invalid username or password' }, 401);
+      return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!isPasswordValid) {
-      return c.json({ error: 'Invalid username or password' }, 401);
+    // Verify password
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    if (!passwordValid) {
+      return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    const token = generateToken({
-      userId: user.id,
-      username: user.username,
-      email: user.email
-    });
+    // Generate JWT token
+    const token = await sign(
+      {
+        userId: user.id,
+        username: user.username,
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+      },
+      JWT_SECRET
+    );
 
     return c.json({
       success: true,
@@ -96,29 +111,46 @@ auth.post('/login', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Login error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('Login error:', error);
+    return c.json({ error: 'Failed to login' }, 500);
   }
 });
 
-// 현재 사용자 정보
-auth.get('/me', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-
-  const token = authHeader.substring(7);
-
+// 현재 사용자 정보 조회 (JWT 인증 필요)
+app.get('/me', async (c) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const token = authHeader.substring(7);
     
+    // Verify JWT
+    const payload = await verify(token, JWT_SECRET) as CustomJWTPayload;
+    
+    // Get user info
+    const user = db.getUserById(payload.userId);
+
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
     return c.json({
       success: true,
-      user: decoded
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        createdAt: user.created_at
+      }
     });
+
   } catch (error) {
-    return c.json({ error: 'Invalid token' }, 401);
+    console.error('Auth error:', error);
+    return c.json({ error: 'Unauthorized - Invalid token' }, 401);
   }
 });
+
+export default app;
