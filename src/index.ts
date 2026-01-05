@@ -1,67 +1,115 @@
-// src/index.ts
-import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
+import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import dotenv from 'dotenv';
-import { db } from './utils/db.js';
-import diaryRoutes from './routes/diary.js';
-import phraseRoutes from './routes/phrases.js';
-import authRoutes from './routes/auth.js';
-import { authMiddleware } from './middleware/auth.js';
-import { startScheduler } from './services/scheduler.js';
+import { config } from 'dotenv';
+import diary from './routes/diary.js';
+import phrases from './routes/phrases.js';
+import auth from './routes/auth.js';
+import { SchedulerService } from './services/scheduler.js';
 
-dotenv.config();
+// Load environment variables
+config();
 
 const app = new Hono();
+let scheduler: SchedulerService;
 
-// CORS 설정
-app.use('/*', cors());
+// Middleware - CORS
+app.use('*', async (c, next) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (c.req.method === 'OPTIONS') {
+    return c.body(null, 204);
+  }
+  
+  await next();
+});
 
-// 정적 파일 제공
-app.use('/*', serveStatic({ root: './static' }));
+// Routes
+app.get('/', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Daily Condition Letter</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+      <div id="app"></div>
+      <script src="/static/app.js"></script>
+    </body>
+    </html>
+  `);
+});
 
-// 루트 경로를 index.html로 명시적으로 매핑
-app.get('/', serveStatic({ path: './static/index.html' }));
+// API routes
+app.route('/api/auth', auth);
+app.route('/api/diary', diary);
+app.route('/api/phrases', phrases);
 
-// 인증 라우트 (JWT 불필요)
-app.route('/api/auth', authRoutes);
-
-// 보호된 라우트 (JWT 필요)
-app.use('/api/diary/*', authMiddleware);
-app.use('/api/phrases/*', authMiddleware);
-
-// API 라우트
-app.route('/api/diary', diaryRoutes);
-app.route('/api/phrases', phraseRoutes);
+// Manual trigger endpoint (for testing)
+app.post('/api/trigger-now', async (c) => {
+  try {
+    if (scheduler) {
+      await scheduler.triggerNow();
+      return c.json({ success: true, message: 'Letter generation triggered' });
+    } else {
+      return c.json({ error: 'Scheduler not initialized' }, 500);
+    }
+  } catch (error) {
+    console.error('Trigger error:', error);
+    return c.json({ error: 'Failed to trigger letter generation' }, 500);
+  }
+});
 
 // Health check
 app.get('/api/health', (c) => {
   return c.json({
     status: 'healthy',
-    scheduler: 'running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    scheduler: scheduler ? 'running' : 'not initialized'
   });
 });
 
-// 수동 트리거
-app.post('/api/trigger-now', async (c) => {
-  const { processAndSendLetters } = await import('./services/scheduler.js');
-  await processAndSendLetters();
-  return c.json({
-    success: true,
-    message: 'Letter processing triggered manually'
-  });
-});
+// Static files
+app.use('/static/*', serveStatic({ root: './' }));
 
-// Scheduler 시작
-startScheduler();
+// Initialize scheduler
+function initializeScheduler() {
+  try {
+    scheduler = new SchedulerService();
+    scheduler.startScheduler();
+  } catch (error) {
+    console.error('❌ Failed to initialize scheduler:', error);
+    console.log('⚠️  Server will run without scheduler');
+  }
+}
 
-const port = Number(process.env.PORT) || 3000;
+// Start server
+const port = parseInt(process.env.PORT || '3000');
 
-console.log(`🚀 Server is running on http://localhost:${port}`);
+console.log(`
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║           Daily Condition Letter System                     ║
+║           AI-Powered Morning Newsletter                     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+`);
 
 serve({
   fetch: app.fetch,
   port
+}, (info) => {
+  console.log(`🚀 Server running at http://localhost:${info.port}`);
+  console.log(`📊 Health check: http://localhost:${info.port}/api/health`);
+  console.log(`🔧 Manual trigger: POST http://localhost:${info.port}/api/trigger-now\n`);
+  
+  // Start scheduler after server is running
+  initializeScheduler();
 });
+
+export default app;
