@@ -2,13 +2,18 @@ import { Hono } from 'hono';
 import { verify } from 'hono/jwt';
 import { db } from '../utils/db.js';
 
-const app = new Hono();
+// Hono 앱 타입 정의
+type Variables = {
+  userId: number;
+};
+
+const app = new Hono<{ Variables: Variables }>();
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // JWT 인증 미들웨어
-async function authMiddleware(c: any, next: any) {
+app.use('*', async (c, next) => {
   try {
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,10 +29,10 @@ async function authMiddleware(c: any, next: any) {
   } catch (error) {
     return c.json({ error: 'Unauthorized - Invalid token' }, 401);
   }
-}
+});
 
 // 명언 추가
-app.post('/', authMiddleware, async (c) => {
+app.post('/', async (c) => {
   try {
     const userId = c.get('userId');
     const { content, author } = await c.req.json();
@@ -55,7 +60,7 @@ app.post('/', authMiddleware, async (c) => {
 });
 
 // 명언 목록 조회
-app.get('/', authMiddleware, async (c) => {
+app.get('/', async (c) => {
   try {
     const userId = c.get('userId');
     const phrases = db.getAllPhrases(userId);
@@ -72,7 +77,7 @@ app.get('/', authMiddleware, async (c) => {
 });
 
 // 명언 삭제
-app.delete('/:id', authMiddleware, async (c) => {
+app.delete('/:id', async (c) => {
   try {
     const userId = c.get('userId');
     const phraseId = parseInt(c.req.param('id'));
