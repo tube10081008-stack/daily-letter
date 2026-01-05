@@ -1,33 +1,41 @@
-import dotenv from 'dotenv';
+import { SchedulerService } from '../services/scheduler.js';
 import { db } from '../utils/db.js';
 
-dotenv.config();
+console.log('🧪 Testing cron scheduler...\n');
 
-console.log('🧪 Testing Cron Job Prerequisites...\n');
+async function testScheduler() {
+  try {
+    // 사용자 조회
+    const user = db.getDB().prepare('SELECT * FROM users LIMIT 1').get() as any;
+    
+    if (!user) {
+      // 테스트 사용자 조회
+      const testDiary = db.getDB().prepare('SELECT * FROM diary_entries LIMIT 1').get() as any;
+      
+      if (!testDiary) {
+        const testPhrase = db.getDB().prepare('SELECT * FROM favorite_phrases LIMIT 1').get() as any;
+        
+        console.log('⚠️  No data found. Run: npm run db:init');
+        return;
+      }
+    }
 
-// 1. Database 확인
-console.log('1️⃣ Checking Database...');
-const users = db.prepare('SELECT * FROM users WHERE email = ?').get('demo@example.com') as any;
-console.log('   Users:', users ? 'Found demo user' : 'No demo user');
+    console.log(`✅ Found user: ${user.email}\n`);
 
-const diaries = db.prepare('SELECT * FROM diary_entries WHERE sent_at IS NULL').all();
-console.log('   Unsent diaries:', diaries.length);
+    // 스케줄러 생성 및 수동 트리거
+    const scheduler = new SchedulerService();
+    
+    console.log('🚀 Triggering manual letter generation...\n');
+    await scheduler.triggerNow();
 
-const phrases = db.prepare('SELECT * FROM favorite_phrases').all();
-console.log('   Phrases:', phrases.length);
+    console.log('\n✅ Test completed successfully!');
+    
+    db.close();
 
-// 2. Environment Variables 확인
-console.log('\n2️⃣ Checking Environment Variables...');
-console.log('   SENDGRID_API_KEY:', process.env.SENDGRID_API_KEY ? '✅ Set' : '❌ Missing');
-console.log('   SENDGRID_FROM_EMAIL:', process.env.SENDGRID_FROM_EMAIL || '❌ Missing');
-console.log('   GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Missing');
-
-// 3. Scheduler 테스트
-console.log('\n3️⃣ Testing Scheduler Logic...');
-if (diaries.length > 0) {
-  console.log('   ✅ Ready to send', diaries.length, 'letters');
-} else {
-  console.log('   ℹ️  No unsent diaries found');
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    process.exit(1);
+  }
 }
 
-console.log('\n✅ Test complete!');
+testScheduler();
