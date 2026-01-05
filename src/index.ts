@@ -1,3 +1,4 @@
+// src/index.ts
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -20,6 +21,9 @@ app.use('/*', cors());
 // 정적 파일 제공
 app.use('/*', serveStatic({ root: './static' }));
 
+// 루트 경로를 index.html로 명시적으로 매핑
+app.get('/', serveStatic({ path: './static/index.html' }));
+
 // 인증 라우트 (JWT 불필요)
 app.route('/api/auth', authRoutes);
 
@@ -27,12 +31,13 @@ app.route('/api/auth', authRoutes);
 app.use('/api/diary/*', authMiddleware);
 app.use('/api/phrases/*', authMiddleware);
 
+// API 라우트
 app.route('/api/diary', diaryRoutes);
 app.route('/api/phrases', phraseRoutes);
 
 // Health check
 app.get('/api/health', (c) => {
-  return c.json({ 
+  return c.json({
     status: 'healthy',
     scheduler: 'running',
     timestamp: new Date().toISOString()
@@ -43,43 +48,11 @@ app.get('/api/health', (c) => {
 app.post('/api/trigger-now', async (c) => {
   const { processAndSendLetters } = await import('./services/scheduler.js');
   await processAndSendLetters();
-  return c.json({ 
-    success: true, 
-    message: 'Letter processing triggered manually' 
+  return c.json({
+    success: true,
+    message: 'Letter processing triggered manually'
   });
 });
-
-// 데모 데이터 초기화
-function ensureDemoData() {
-  const demoUser = db.prepare('SELECT * FROM users WHERE email = ?').get('demo@example.com');
-  
-  if (!demoUser) {
-    console.log('🔧 Initializing demo data...');
-    
-    db.prepare('INSERT INTO users (email, name, username, password_hash) VALUES (?, ?, ?, ?)').run(
-      'demo@example.com',
-      '성현',
-      null,
-      null
-    );
-    
-    db.prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)').run(
-      1,
-      '삶이 있는 한 희망은 있다.',
-      '키케로'
-    );
-    
-    db.prepare('INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)').run(
-      1,
-      '산다는것 그것은 치열한 전투이다.',
-      '로망로랑'
-    );
-    
-    console.log('✅ Demo data initialized');
-  }
-}
-
-ensureDemoData();
 
 // Scheduler 시작
 startScheduler();
