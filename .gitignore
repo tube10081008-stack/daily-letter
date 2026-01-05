@@ -1,9 +1,8 @@
 node_modules/
 .env
-*.db
-*.log
-dist/
-.DS_Store
-.wrangler/
 .dev.vars
-data/database.json
+.wrangler/
+dist/
+*.log
+data/
+.DS_Store
