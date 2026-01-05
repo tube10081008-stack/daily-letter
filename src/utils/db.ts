@@ -38,7 +38,7 @@ class DatabaseService {
   }
 
   // 직접 DB 접근용 (scheduler에서 사용)
-  getDB() {
+  getDB(): Database.Database {
     return this.db;
   }
 
