@@ -14,6 +14,7 @@ async function checkAuth() {
   const token = localStorage.getItem('token');
   
   if (!token) {
+    console.warn('⚠️ No token found - redirecting to login');
     window.location.href = '/login.html';
     return;
   }
@@ -31,9 +32,16 @@ async function checkAuth() {
 
     const data = await response.json();
     currentUser = data.user;
-    document.getElementById('userName').textContent = currentUser.username || currentUser.email;
+    
+    // 사용자 이름 표시
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement) {
+      userNameElement.textContent = currentUser.username || currentUser.email;
+    }
+    
+    console.log('✅ Auth successful:', currentUser);
   } catch (error) {
-    console.error('인증 실패:', error);
+    console.error('❌ 인증 실패:', error);
     localStorage.clear();
     window.location.href = '/login.html';
   }
