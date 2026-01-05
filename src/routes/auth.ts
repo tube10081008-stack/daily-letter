@@ -103,13 +103,22 @@ auth.post('/login', async (c) => {
 
 // 현재 사용자 정보
 auth.get('/me', async (c) => {
-  const user = c.get('user');
+  const authHeader = c.req.header('Authorization');
   
-  if (!user) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  return c.json({ success: true, user });
-});
+  const token = authHeader.substring(7);
 
-export default auth;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    
+    return c.json({
+      success: true,
+      user: decoded
+    });
+  } catch (error) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+});
