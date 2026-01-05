@@ -37,6 +37,11 @@ class DatabaseService {
     this.initTables();
   }
 
+  // 직접 DB 접근용 (scheduler에서 사용)
+  getDB() {
+    return this.db;
+  }
+
   private initTables() {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
