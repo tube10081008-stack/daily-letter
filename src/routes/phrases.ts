@@ -1,67 +1,97 @@
 import { Hono } from 'hono';
+import { verify } from 'hono/jwt';
 import { db } from '../utils/db.js';
 
-const phrases = new Hono();
+const app = new Hono();
 
-// 모든 명언 조회
-phrases.get('/', async (c) => {
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// JWT 인증 미들웨어
+async function authMiddleware(c: any, next: any) {
   try {
-    const user = c.get('user');
-    const userId = user?.userId || 1;
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Unauthorized - No token provided' }, 401);
+    }
 
-    const allPhrases = db.prepare(
-      'SELECT * FROM favorite_phrases WHERE user_id = ?'
-    ).all(userId);
-
-    return c.json({ success: true, phrases: allPhrases });
+    const token = authHeader.substring(7);
+    const payload = await verify(token, JWT_SECRET) as any;
+    
+    // 요청 객체에 userId 추가
+    c.set('userId', payload.userId);
+    await next();
   } catch (error) {
-    console.error('❌ Error fetching phrases:', error);
-    return c.json({ error: 'Failed to fetch phrases' }, 500);
+    return c.json({ error: 'Unauthorized - Invalid token' }, 401);
   }
-});
+}
 
 // 명언 추가
-phrases.post('/', async (c) => {
+app.post('/', authMiddleware, async (c) => {
   try {
-    const user = c.get('user');
-    const userId = user?.userId || 1;
-
+    const userId = c.get('userId');
     const { content, author } = await c.req.json();
 
     if (!content) {
       return c.json({ error: 'Content is required' }, 400);
     }
 
-    const result = db.prepare(
-      'INSERT INTO favorite_phrases (user_id, content, author) VALUES (?, ?, ?)'
-    ).run(userId, content, author || null);
+    const phrase = db.addFavoritePhrase({
+      user_id: userId,
+      content,
+      author
+    });
 
     return c.json({
       success: true,
       message: 'Phrase added successfully',
-      phraseId: result.lastInsertRowid
+      phraseId: phrase.id
     });
+
   } catch (error) {
-    console.error('❌ Error adding phrase:', error);
+    console.error('Phrase add error:', error);
     return c.json({ error: 'Failed to add phrase' }, 500);
   }
 });
 
-// 명언 삭제
-phrases.delete('/:id', async (c) => {
+// 명언 목록 조회
+app.get('/', authMiddleware, async (c) => {
   try {
-    const id = Number(c.req.param('id'));
+    const userId = c.get('userId');
+    const phrases = db.getAllPhrases(userId);
 
-    db.prepare('DELETE FROM favorite_phrases WHERE id = ?').run(id);
+    return c.json({
+      success: true,
+      phrases
+    });
+
+  } catch (error) {
+    console.error('Phrases fetch error:', error);
+    return c.json({ error: 'Failed to fetch phrases' }, 500);
+  }
+});
+
+// 명언 삭제
+app.delete('/:id', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId');
+    const phraseId = parseInt(c.req.param('id'));
+
+    const deleted = db.deletePhrase(phraseId, userId);
+
+    if (!deleted) {
+      return c.json({ error: 'Phrase not found' }, 404);
+    }
 
     return c.json({
       success: true,
       message: 'Phrase deleted successfully'
     });
+
   } catch (error) {
-    console.error('❌ Error deleting phrase:', error);
+    console.error('Phrase delete error:', error);
     return c.json({ error: 'Failed to delete phrase' }, 500);
   }
 });
 
-export default phrases;
+export default app;
