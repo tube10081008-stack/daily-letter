@@ -4,229 +4,98 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>로그인 - Daily Condition Letter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .login-container {
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .logo {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .logo h1 {
-      font-size: 28px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-
-    .logo p {
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #374151;
-      font-weight: 600;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-
-    .btn-login {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s;
-      margin-top: 10px;
-    }
-
-    .btn-login:hover {
-      transform: translateY(-2px);
-    }
-
-    .btn-login:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .signup-link {
-      text-align: center;
-      margin-top: 20px;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .signup-link a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .signup-link a:hover {
-      text-decoration: underline;
-    }
-
-    .error-message {
-      background: #fee;
-      color: #c33;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      display: none;
-    }
+    body { font-family: 'Noto Sans KR', sans-serif; }
   </style>
 </head>
-<body>
-
-  <div class="login-container">
-    <div class="logo">
-      <h1>💌 Daily Condition Letter</h1>
-      <p>로그인</p>
+<body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-screen flex items-center justify-center p-4">
+  
+  <div class="max-w-md w-full">
+    <!-- 로고 -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        📮 Daily Letter
+      </h1>
+      <p class="text-gray-600 mt-2">AI가 전하는 나만의 편지</p>
     </div>
 
-    <div id="errorMessage" class="error-message"></div>
+    <!-- 로그인 카드 -->
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">로그인</h2>
+      
+      <form id="loginForm">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">아이디</label>
+          <input 
+            type="text" 
+            id="username" 
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="아이디를 입력하세요"
+          >
+        </div>
 
-    <form id="loginForm" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label for="username">아이디</label>
-        <input 
-          type="text" 
-          id="username" 
-          name="username" 
-          placeholder="아이디를 입력하세요"
-          required
-          autocomplete="username"
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-medium mb-2">비밀번호</label>
+          <input 
+            type="password" 
+            id="password" 
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="비밀번호를 입력하세요"
+          >
+        </div>
+
+        <button 
+          type="submit"
+          class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-300"
         >
+          로그인
+        </button>
+      </form>
+
+      <div class="mt-6 text-center">
+        <p class="text-gray-600">
+          계정이 없으신가요? 
+          <a href="/static/signup.html" class="text-purple-600 font-medium hover:underline">회원가입</a>
+        </p>
       </div>
-
-      <div class="form-group">
-        <label for="password">비밀번호</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          placeholder="비밀번호를 입력하세요"
-          required
-          autocomplete="current-password"
-        >
-      </div>
-
-      <button type="submit" class="btn-login" id="loginBtn">
-        로그인
-      </button>
-    </form>
-
-    <div class="signup-link">
-      계정이 없으신가요? <a href="/signup.html">회원가입</a>
     </div>
   </div>
 
   <script>
-    // 이미 로그인된 경우 메인으로 리다이렉션
-    if (localStorage.getItem('token')) {
-      window.location.href = '/';
-    }
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    function showError(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
-      setTimeout(() => {
-        errorDiv.style.display = 'none';
-      }, 5000);
-    }
-
-    async function handleLogin(event) {
-      event.preventDefault();
-
-      const username = document.getElementById('username').value.trim();
+      const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
-      const loginBtn = document.getElementById('loginBtn');
-
-      if (!username || !password) {
-        showError('아이디와 비밀번호를 모두 입력해주세요.');
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.textContent = '로그인 중...';
 
       try {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (data.success) {
           // 토큰 저장
           localStorage.setItem('token', data.token);
-          console.log('✅ 로그인 성공:', data);
-          
-          // 메인 페이지로 리다이렉션
-          window.location.href = '/';
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          // 메인 페이지로 이동
+          window.location.href = '/static/index.html';
         } else {
-          throw new Error(data.error || '로그인에 실패했습니다.');
+          alert(data.error || '로그인에 실패했습니다.');
         }
       } catch (error) {
-        console.error('❌ 로그인 에러:', error);
-        showError(error.message);
-        loginBtn.disabled = false;
-        loginBtn.textContent = '로그인';
+        console.error('Login error:', error);
+        alert('로그인 중 오류가 발생했습니다.');
       }
-    }
+    });
   </script>
 
 </body>
