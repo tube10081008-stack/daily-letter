@@ -9,15 +9,8 @@ async function testScheduler() {
     const user = db.getDB().prepare('SELECT * FROM users LIMIT 1').get() as any;
     
     if (!user) {
-      // 테스트 사용자 조회
-      const testDiary = db.getDB().prepare('SELECT * FROM diary_entries LIMIT 1').get() as any;
-      
-      if (!testDiary) {
-        const testPhrase = db.getDB().prepare('SELECT * FROM favorite_phrases LIMIT 1').get() as any;
-        
-        console.log('⚠️  No data found. Run: npm run db:init');
-        return;
-      }
+      console.log('⚠️  No data found. Run: npm run db:init');
+      return;
     }
 
     console.log(`✅ Found user: ${user.email}\n`);
