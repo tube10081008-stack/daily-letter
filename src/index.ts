@@ -28,21 +28,7 @@ app.use('*', async (c, next) => {
 
 // Routes
 app.get('/', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Daily Condition Letter</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
-      <div id="app"></div>
-      <script src="/static/app.js"></script>
-    </body>
-    </html>
-  `);
+  return c.redirect('/static/index.html');
 });
 
 // API routes
@@ -94,7 +80,7 @@ const port = parseInt(process.env.PORT || '3000');
 console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║           Daily Condition Letter System                     ║
+║           Daily Condition Letter System v2.0                ║
 ║           AI-Powered Morning Newsletter                     ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
