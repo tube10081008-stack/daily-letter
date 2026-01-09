@@ -1,0 +1,708 @@
+/**
+ * Data Access Layer
+ * 
+ * 이 레이어는 UI 코드와 데이터 소스 사이의 추상화 계층입니다.
+ * 현재는 mock 데이터를 반환하지만, 추후 실제 DB/API 연결 시
+ * 이 파일만 수정하면 UI 코드는 변경 없이 작동합니다.
+ * 
+ * 모든 시간 데이터는 ISO 8601 형식 (new Date().toISOString())으로 생성됩니다.
+ */
+
+const dataLayer = {
+    // ============================================
+    // Mock 데이터 (테스트용)
+    // ============================================
+    
+    mockData: {
+        drivers: [
+            {
+                id: 'driver-a',
+                name: '김철수',
+                region: 'N',
+                pin_hash: '1234',
+                status: 'READY'
+            },
+            {
+                id: 'driver-b',
+                name: '이영희',
+                region: 'S',
+                pin_hash: '5678',
+                status: 'READY'
+            }
+        ],
+        
+        admins: [
+            {
+                id: 'admin',
+                name: '운영관리자',
+                pin_hash: '0000'
+            }
+        ],
+        
+        locations: [
+            {
+                id: 'LOC-N001',
+                name: '강남 오피스텔',
+                address: '서울 강남구 테헤란로 123',
+                region: 'N',
+                entry_instruction_text: '정문 → 경비실 호출 → 3층 엘리베이터 → 301호'
+            },
+            {
+                id: 'LOC-N002',
+                name: '서초 아파트',
+                address: '서울 서초구 서초대로 456',
+                region: 'N',
+                entry_instruction_text: '후문 → 관리사무소 → 101동 1층'
+            },
+            {
+                id: 'LOC-N003',
+                name: '역삼 빌라',
+                address: '서울 강남구 역삼로 789',
+                region: 'N',
+                entry_instruction_text: '지하주차장 → B1 출구 → 우측 계단'
+            },
+            {
+                id: 'LOC-N004',
+                name: '논현 주택',
+                address: '서울 강남구 논현로 321',
+                region: 'N',
+                entry_instruction_text: '대문 초인종 → 마당 통과 → 현관'
+            },
+            {
+                id: 'LOC-S001',
+                name: '영등포 오피스텔',
+                address: '서울 영등포구 여의대로 111',
+                region: 'S',
+                entry_instruction_text: '정문 → 카드키 필요 → 5층 엘리베이터 → 502호'
+            },
+            {
+                id: 'LOC-S002',
+                name: '구로 아파트',
+                address: '서울 구로구 디지털로 222',
+                region: 'S',
+                entry_instruction_text: '정문 → 경비실 확인 → 201동 지하주차장'
+            },
+            {
+                id: 'LOC-S003',
+                name: '관악 빌라',
+                address: '서울 관악구 신림로 333',
+                region: 'S',
+                entry_instruction_text: '골목 진입 → 2층 계단 → 좌측 끝'
+            },
+            {
+                id: 'LOC-S004',
+                name: '동작 원룸',
+                address: '서울 동작구 노량진로 444',
+                region: 'S',
+                entry_instruction_text: '건물 1층 → 우측 복도 → 104호'
+            },
+            {
+                id: 'LOC-S005',
+                name: '금천 주택',
+                address: '서울 금천구 가산디지털로 555',
+                region: 'S',
+                entry_instruction_text: '대문 비밀번호 1234# → 마당 → 현관'
+            }
+        ],
+        
+        routeDays: [],
+        stops: [],
+        stopEvents: [],
+        notificationLogs: []
+    },
+
+    // ============================================
+    // 인증 (Authentication)
+    // ============================================
+    
+    /**
+     * Driver 로그인 확인
+     * @param {string} id - Driver ID
+     * @param {string} pin - PIN 코드
+     * @returns {Promise<Object|null>} Driver 객체 또는 null
+     */
+    async authenticateDriver(id, pin) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch('/api/auth/driver', { method: 'POST', body: { id, pin } })
+        if (!Array.isArray(this.mockData.drivers)) {
+            console.error('mockData.drivers is not an array');
+            return null;
+        }
+        const driver = this.mockData.drivers.find(d => d.id === id && d.pin_hash === pin);
+        return driver || null;
+    },
+
+    /**
+     * Admin 로그인 확인
+     * @param {string} id - Admin ID
+     * @param {string} pin - PIN 코드
+     * @returns {Promise<Object|null>} Admin 객체 또는 null
+     */
+    async authenticateAdmin(id, pin) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch('/api/auth/admin', { method: 'POST', body: { id, pin } })
+        if (!Array.isArray(this.mockData.admins)) {
+            console.error('mockData.admins is not an array');
+            return null;
+        }
+        const admin = this.mockData.admins.find(a => a.id === id && a.pin_hash === pin);
+        return admin || null;
+    },
+
+    // ============================================
+    // Driver 관련
+    // ============================================
+    
+    /**
+     * 모든 Driver 조회
+     * @returns {Promise<Array>} Driver 목록
+     */
+    async getAllDrivers() {
+        // 현재: mock 데이터 반환
+        // 추후: await fetch('/api/drivers')
+        if (!Array.isArray(this.mockData.drivers)) {
+            console.error('mockData.drivers is not an array');
+            return [];
+        }
+        return [...this.mockData.drivers];
+    },
+
+    /**
+     * Driver ID로 조회
+     * @param {string} driverId - Driver ID
+     * @returns {Promise<Object|null>} Driver 객체 또는 null
+     */
+    async getDriverById(driverId) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch(`/api/drivers/${driverId}`)
+        if (!Array.isArray(this.mockData.drivers)) {
+            console.error('mockData.drivers is not an array');
+            return null;
+        }
+        return this.mockData.drivers.find(d => d.id === driverId) || null;
+    },
+
+    /**
+     * Driver 상태 업데이트
+     * @param {string} driverId - Driver ID
+     * @param {string} status - 상태 (READY, ON_DUTY)
+     * @returns {Promise<Object>} 업데이트된 Driver 객체
+     */
+    async updateDriverStatus(driverId, status) {
+        // 현재: mock 데이터 수정
+        // 추후: await fetch(`/api/drivers/${driverId}`, { method: 'PATCH', body: { status } })
+        const driver = this.mockData.drivers.find(d => d.id === driverId);
+        if (driver) {
+            driver.status = status;
+        }
+        return driver;
+    },
+
+    // ============================================
+    // Admin 관련
+    // ============================================
+    
+    /**
+     * 모든 Admin 조회
+     * @returns {Promise<Array>} Admin 목록
+     */
+    async getAllAdmins() {
+        // 현재: mock 데이터 반환
+        // 추후: await fetch('/api/admins')
+        if (!Array.isArray(this.mockData.admins)) {
+            console.error('mockData.admins is not an array');
+            return [];
+        }
+        return [...this.mockData.admins];
+    },
+
+    /**
+     * Admin ID로 조회
+     * @param {string} adminId - Admin ID
+     * @returns {Promise<Object|null>} Admin 객체 또는 null
+     */
+    async getAdminById(adminId) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch(`/api/admins/${adminId}`)
+        if (!Array.isArray(this.mockData.admins)) {
+            console.error('mockData.admins is not an array');
+            return null;
+        }
+        return this.mockData.admins.find(a => a.id === adminId) || null;
+    },
+
+    // ============================================
+    // Location 관련
+    // ============================================
+    
+    /**
+     * 모든 Location 조회
+     * @returns {Promise<Array>} Location 목록
+     */
+    async getAllLocations() {
+        // 현재: mock 데이터 반환
+        // 추후: await fetch('/api/locations')
+        if (!Array.isArray(this.mockData.locations)) {
+            console.error('mockData.locations is not an array');
+            return [];
+        }
+        return [...this.mockData.locations];
+    },
+
+    /**
+     * Location ID로 조회
+     * @param {string} locationId - Location ID
+     * @returns {Promise<Object|null>} Location 객체 또는 null
+     */
+    async getLocationById(locationId) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch(`/api/locations/${locationId}`)
+        return this.mockData.locations.find(l => l.id === locationId) || null;
+    },
+
+    /**
+     * Location 출입 안내 업데이트
+     * @param {string} locationId - Location ID
+     * @param {string} text - 출입 안내 텍스트
+     * @returns {Promise<Object>} 업데이트된 Location 객체
+     */
+    async updateEntryInstruction(locationId, text) {
+        // 현재: mock 데이터 수정
+        // 추후: await fetch(`/api/locations/${locationId}`, { method: 'PATCH', body: { entry_instruction_text: text } })
+        const location = this.mockData.locations.find(l => l.id === locationId);
+        if (location) {
+            location.entry_instruction_text = text;
+        }
+        return location;
+    },
+
+    // ============================================
+    // RouteDay 관련 (오늘의 경로)
+    // ============================================
+    
+    /**
+     * 오늘의 Driver 경로 조회
+     * @param {string} driverId - Driver ID
+     * @returns {Promise<Object|null>} RouteDay 객체 또는 null
+     */
+    async getTodayRouteForDriver(driverId) {
+        // 현재: mock 데이터에서 오늘 날짜 검색
+        // 추후: await fetch(`/api/route-days/today?driverId=${driverId}`)
+        const today = utils.formatDate();
+        return this.mockData.routeDays.find(r => r.driver_id === driverId && r.date === today) || null;
+    },
+
+    /**
+     * 특정 날짜의 모든 RouteDay 조회
+     * @param {string} date - 날짜 (YYYY-MM-DD)
+     * @returns {Promise<Array>} RouteDay 목록
+     */
+    async getRouteDaysByDate(date) {
+        // 현재: mock 데이터 필터링
+        // 추후: await fetch(`/api/route-days?date=${date}`)
+        return this.mockData.routeDays.filter(r => r.date === date);
+    },
+
+    /**
+     * 경로 시작 (job_started_at 기록)
+     * @param {string} routeDayId - RouteDay ID
+     * @returns {Promise<Object>} 업데이트된 RouteDay 객체
+     */
+    async startRoute(routeDayId) {
+        // 현재: mock 데이터 수정, 시간은 ISO 8601 형식으로 저장
+        // 추후: await fetch(`/api/route-days/${routeDayId}/start`, { method: 'POST' })
+        const routeDay = this.mockData.routeDays.find(r => r.id === routeDayId);
+        if (routeDay) {
+            routeDay.job_started_at = new Date().toISOString();
+        }
+        return routeDay;
+    },
+
+    // ============================================
+    // Stop 관련 (정차지)
+    // ============================================
+    
+    /**
+     * 오늘의 Driver 정차지 목록 조회
+     * @param {string} driverId - Driver ID
+     * @returns {Promise<Array>} Stop 목록 (sequence 순서)
+     */
+    async getTodayStopsForDriver(driverId) {
+        // 현재: mock 데이터 필터링
+        // 추후: await fetch(`/api/stops/today?driverId=${driverId}`)
+        const routeDay = await this.getTodayRouteForDriver(driverId);
+        if (!routeDay) return [];
+        
+        return this.mockData.stops
+            .filter(s => s.route_day_id === routeDay.id)
+            .sort((a, b) => a.sequence - b.sequence);
+    },
+
+    /**
+     * RouteDay의 모든 정차지 조회
+     * @param {string} routeDayId - RouteDay ID
+     * @returns {Promise<Array>} Stop 목록 (sequence 순서)
+     */
+    async getStopsByRouteDay(routeDayId) {
+        // 현재: mock 데이터 필터링
+        // 추후: await fetch(`/api/stops?routeDayId=${routeDayId}`)
+        return this.mockData.stops
+            .filter(s => s.route_day_id === routeDayId)
+            .sort((a, b) => a.sequence - b.sequence);
+    },
+
+    /**
+     * Stop ID로 조회
+     * @param {string} stopId - Stop ID
+     * @returns {Promise<Object|null>} Stop 객체 또는 null
+     */
+    async getStopById(stopId) {
+        // 현재: mock 데이터에서 검색
+        // 추후: await fetch(`/api/stops/${stopId}`)
+        return this.mockData.stops.find(s => s.id === stopId) || null;
+    },
+
+    /**
+     * 정차지 완료 처리
+     * @param {string} stopId - Stop ID
+     * @param {Object} payload - { deliveredType: 'DELIVERED' | 'PICKED_UP' | 'BOTH', note: string (optional) }
+     * @returns {Promise<Object>} 업데이트된 Stop 객체
+     */
+    async completeStop(stopId, payload) {
+        // 현재: mock 데이터 수정, 시간은 ISO 8601 형식
+        // 추후: await fetch(`/api/stops/${stopId}/complete`, { method: 'POST', body: payload })
+        const stop = this.mockData.stops.find(s => s.id === stopId);
+        if (!stop) return null;
+
+        // 완료 시간 기록 (ISO 8601 형식)
+        stop.status = 'COMPLETED';
+        stop.completed_at = new Date().toISOString();
+        stop.delivered_type = payload.deliveredType;
+
+        // 메모가 있으면 이벤트 생성
+        if (payload.note) {
+            await this.createStopEvent(stopId, 'NOTE', payload.note);
+        }
+
+        // 시스템 이벤트 생성
+        await this.createStopEvent(stopId, 'SYSTEM', `정차지 완료: ${utils.getDeliveredTypeLabel(payload.deliveredType)}`);
+
+        // Ops에게 알림 전송
+        await this.createNotification('ADMIN', 'admin', 'SMS', `[완료] ${state.getCurrentUserName()} - 정차지 완료`);
+
+        return stop;
+    },
+
+    /**
+     * 정차지 순서 변경
+     * @param {Array} stops - 재정렬된 Stop 목록 (새로운 sequence 순서)
+     * @returns {Promise<Array>} 업데이트된 Stop 목록
+     */
+    async reorderStops(stops) {
+        // 현재: mock 데이터 수정
+        // 추후: await fetch('/api/stops/reorder', { method: 'POST', body: { stops } })
+        stops.forEach((stop, index) => {
+            const mockStop = this.mockData.stops.find(s => s.id === stop.id);
+            if (mockStop) {
+                mockStop.sequence = index + 1;
+            }
+        });
+        return stops;
+    },
+
+    // ============================================
+    // StopEvent 관련 (메모, 시스템 로그)
+    // ============================================
+    
+    /**
+     * 정차지 이벤트 생성
+     * @param {string} stopId - Stop ID
+     * @param {string} type - 'NOTE' | 'SYSTEM'
+     * @param {string} content - 내용
+     * @returns {Promise<Object>} 생성된 StopEvent 객체
+     */
+    async createStopEvent(stopId, type, content) {
+        // 현재: mock 데이터에 추가, 시간은 ISO 8601 형식
+        // 추후: await fetch('/api/stop-events', { method: 'POST', body: { stopId, type, content } })
+        const event = {
+            id: utils.generateId('event'),
+            stop_id: stopId,
+            type: type,
+            content: content,
+            created_at: new Date().toISOString(),
+            created_by: state.getCurrentUserId()
+        };
+        this.mockData.stopEvents.push(event);
+        return event;
+    },
+
+    /**
+     * 정차지의 모든 이벤트 조회
+     * @param {string} stopId - Stop ID
+     * @returns {Promise<Array>} StopEvent 목록 (최신순)
+     */
+    async getStopEvents(stopId) {
+        // 현재: mock 데이터 필터링
+        // 추후: await fetch(`/api/stop-events?stopId=${stopId}`)
+        return this.mockData.stopEvents
+            .filter(e => e.stop_id === stopId)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    },
+
+    /**
+     * 오늘의 모든 이벤트 조회
+     * @returns {Promise<Array>} StopEvent 목록 (최신순)
+     */
+    async getTodayEvents() {
+        // 현재: mock 데이터 반환
+        // 추후: await fetch('/api/stop-events/today')
+        return this.mockData.stopEvents
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    },
+
+    // ============================================
+    // Notification 관련
+    // ============================================
+    
+    /**
+     * 알림 생성
+     * @param {string} targetRole - 'DRIVER' | 'ADMIN'
+     * @param {string} targetId - 대상 ID
+     * @param {string} channel - 'SMS' | 'EMAIL'
+     * @param {string} message - 메시지 내용
+     * @returns {Promise<Object>} 생성된 Notification 객체
+     */
+    async createNotification(targetRole, targetId, channel, message) {
+        // 현재: mock 데이터에 추가, 시간은 ISO 8601 형식
+        // 추후: await fetch('/api/notifications', { method: 'POST', body: { targetRole, targetId, channel, message } })
+        const notification = {
+            id: utils.generateId('notif'),
+            target_role: targetRole,
+            target_id: targetId,
+            channel: channel,
+            message: message,
+            sent_at: new Date().toISOString(),
+            status: 'SENT'
+        };
+        this.mockData.notificationLogs.push(notification);
+        return notification;
+    },
+
+    /**
+     * 대상별 알림 조회
+     * @param {string} targetRole - 'DRIVER' | 'ADMIN'
+     * @param {string} targetId - 대상 ID
+     * @returns {Promise<Array>} Notification 목록 (최신순)
+     */
+    async getNotificationsByTarget(targetRole, targetId) {
+        // 현재: mock 데이터 필터링
+        // 추후: await fetch(`/api/notifications?targetRole=${targetRole}&targetId=${targetId}`)
+        return this.mockData.notificationLogs
+            .filter(n => n.target_role === targetRole && n.target_id === targetId)
+            .sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at));
+    },
+
+    /**
+     * 모든 알림 조회
+     * @returns {Promise<Array>} Notification 목록 (최신순)
+     */
+    async getAllNotifications() {
+        // 현재: mock 데이터 반환
+        // 추후: await fetch('/api/notifications')
+        return this.mockData.notificationLogs
+            .sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at));
+    },
+
+    // ============================================
+    // Admin Overview 관련
+    // ============================================
+    
+    /**
+     * 관리자 대시보드 개요 데이터 조회
+     * @returns {Promise<Object>} { drivers: Array, routeDays: Array, stops: Array }
+     */
+    async getAdminOverview() {
+        // 현재: mock 데이터 조합
+        // 추후: await fetch('/api/admin/overview')
+        const today = utils.formatDate();
+        const routeDays = await this.getRouteDaysByDate(today);
+        const drivers = await this.getAllDrivers();
+        const allStops = this.mockData.stops;
+
+        return {
+            drivers,
+            routeDays,
+            stops: allStops
+        };
+    },
+
+    /**
+     * 일일 리포트 데이터 조회
+     * @param {string} date - 날짜 (YYYY-MM-DD)
+     * @returns {Promise<Object>} 리포트 데이터
+     */
+    async getDailyReport(date) {
+        // 현재: mock 데이터 조합
+        // 추후: await fetch(`/api/reports/daily?date=${date}`)
+        const routeDays = await this.getRouteDaysByDate(date);
+        const allStops = this.mockData.stops;
+        const allEvents = this.mockData.stopEvents;
+
+        return {
+            date,
+            routeDays,
+            stops: allStops,
+            events: allEvents
+        };
+    },
+
+    // ============================================
+    // 초기화 (시드 데이터 생성)
+    // ============================================
+    
+    /**
+     * mockData 초기화 검증 및 복구
+     */
+    validateMockData() {
+        console.log('Validating mockData...');
+        
+        // drivers 배열 확인
+        if (!Array.isArray(this.mockData.drivers)) {
+            console.error('mockData.drivers is not an array, reinitializing...');
+            this.mockData.drivers = [
+                { id: 'driver-a', name: '김철수', region: 'N', pin_hash: '1234', status: 'READY' },
+                { id: 'driver-b', name: '이영희', region: 'S', pin_hash: '5678', status: 'READY' }
+            ];
+        }
+        
+        // admins 배열 확인 (핵심!)
+        if (!Array.isArray(this.mockData.admins)) {
+            console.error('mockData.admins is not an array, reinitializing...');
+            this.mockData.admins = [
+                { id: 'admin', name: '운영관리자', pin_hash: '0000' }
+            ];
+        }
+        
+        // locations 배열 확인
+        if (!Array.isArray(this.mockData.locations)) {
+            console.error('mockData.locations is not an array, reinitializing...');
+            this.mockData.locations = [];
+        }
+        
+        // routeDays 배열 확인
+        if (!Array.isArray(this.mockData.routeDays)) {
+            console.warn('mockData.routeDays is not an array, reinitializing...');
+            this.mockData.routeDays = [];
+        }
+        
+        // stops 배열 확인
+        if (!Array.isArray(this.mockData.stops)) {
+            console.warn('mockData.stops is not an array, reinitializing...');
+            this.mockData.stops = [];
+        }
+        
+        // stopEvents 배열 확인
+        if (!Array.isArray(this.mockData.stopEvents)) {
+            console.warn('mockData.stopEvents is not an array, reinitializing...');
+            this.mockData.stopEvents = [];
+        }
+        
+        // notificationLogs 배열 확인
+        if (!Array.isArray(this.mockData.notificationLogs)) {
+            console.warn('mockData.notificationLogs is not an array, reinitializing...');
+            this.mockData.notificationLogs = [];
+        }
+        
+        console.log('mockData validation complete:', {
+            drivers: this.mockData.drivers.length,
+            admins: this.mockData.admins.length,
+            locations: this.mockData.locations.length,
+            routeDays: this.mockData.routeDays.length,
+            stops: this.mockData.stops.length
+        });
+    },
+    
+    /**
+     * 시드 데이터 초기화 (오늘 경로 생성)
+     */
+    initSeedData() {
+        // mockData 검증
+        this.validateMockData();
+        
+        const today = utils.formatDate();
+        
+        // 오늘 경로가 없으면 생성
+        const existingRoutes = this.mockData.routeDays.filter(r => r.date === today);
+        if (existingRoutes.length > 0) return; // 이미 생성됨
+
+        console.log('Creating seed data for today:', today);
+
+        // 북부권 경로 (driver-a)
+        const routeNorth = {
+            id: utils.generateId('route'),
+            date: today,
+            region: 'N',
+            driver_id: 'driver-a',
+            window_start: '11:30',
+            window_end: '14:30',
+            job_started_at: null
+        };
+        this.mockData.routeDays.push(routeNorth);
+
+        // 북부권 정차지
+        const northLocations = this.mockData.locations.filter(l => l.region === 'N');
+        northLocations.forEach((location, index) => {
+            this.mockData.stops.push({
+                id: utils.generateId('stop'),
+                route_day_id: routeNorth.id,
+                sequence: index + 1,
+                location_id: location.id,
+                planned_cs: Math.floor(Math.random() * 3),
+                planned_bt: Math.floor(Math.random() * 3),
+                planned_ft: Math.floor(Math.random() * 3),
+                status: 'READY',
+                job_started_at: null,
+                completed_at: null,
+                delivered_type: null
+            });
+        });
+
+        // 남부권 경로 (driver-b)
+        const routeSouth = {
+            id: utils.generateId('route'),
+            date: today,
+            region: 'S',
+            driver_id: 'driver-b',
+            window_start: '11:30',
+            window_end: '14:30',
+            job_started_at: null
+        };
+        this.mockData.routeDays.push(routeSouth);
+
+        // 남부권 정차지
+        const southLocations = this.mockData.locations.filter(l => l.region === 'S');
+        southLocations.forEach((location, index) => {
+            this.mockData.stops.push({
+                id: utils.generateId('stop'),
+                route_day_id: routeSouth.id,
+                sequence: index + 1,
+                location_id: location.id,
+                planned_cs: Math.floor(Math.random() * 3),
+                planned_bt: Math.floor(Math.random() * 3),
+                planned_ft: Math.floor(Math.random() * 3),
+                status: 'READY',
+                job_started_at: null,
+                completed_at: null,
+                delivered_type: null
+            });
+        });
+
+        console.log('Seed data created:', {
+            routeDays: this.mockData.routeDays.length,
+            stops: this.mockData.stops.length
+        });
+    }
+};
+
+// 앱 로드 시 시드 데이터 초기화
+dataLayer.initSeedData();

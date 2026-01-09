@@ -1,0 +1,19 @@
+[build]
+  command = "echo 'Static site build'"
+  publish = "."
+  functions = "netlify/functions"
+
+[dev]
+  command = "echo 'Dev server'"
+  port = 8888
+  targetPort = 8888
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Environment variables (set in Netlify dashboard)
+# NEON_DATABASE_URL - Neon Postgres connection string

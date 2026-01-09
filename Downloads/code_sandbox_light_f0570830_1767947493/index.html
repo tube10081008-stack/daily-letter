@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MumuBedding 운영 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for mobile-first design */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            overscroll-behavior: none;
+        }
+        
+        /* Large touch targets */
+        .touch-target {
+            min-height: 48px;
+            min-width: 48px;
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Main content area with bottom nav spacing */
+        .main-content {
+            padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        }
+        
+        /* Modal backdrop */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            display: none;
+        }
+        
+        .modal-backdrop.active {
+            display: block;
+        }
+        
+        /* Modal content */
+        .modal-content {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 16px 16px 0 0;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 101;
+        }
+        
+        .modal-content.active {
+            transform: translateY(0);
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            max-width: 90vw;
+        }
+        
+        .toast.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* Status pills */
+        .status-ready {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-in-progress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-late-risk {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        /* Hidden utility */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Copy button animation */
+        .copy-btn-success {
+            background: #10b981 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+    
+    <!-- App Container -->
+    <div id="app" class="main-content">
+        <!-- Content will be dynamically rendered here -->
+    </div>
+    
+    <!-- Bottom Navigation (hidden on login screen) -->
+    <nav id="bottom-nav" class="bottom-nav hidden">
+        <div class="flex justify-around items-center h-16">
+            <button id="nav-today" class="flex-1 flex flex-col items-center justify-center touch-target" onclick="app.navigateTo('today')">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs">오늘</span>
+            </button>
+            <button id="nav-feed" class="flex-1 flex flex-col items-center justify-center touch-target" onclick="app.navigateTo('feed')">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-xs">활동</span>
+            </button>
+            <button id="nav-report" class="flex-1 flex flex-col items-center justify-center touch-target hidden" onclick="app.navigateTo('report')">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span class="text-xs">리포트</span>
+            </button>
+            <button id="nav-profile" class="flex-1 flex flex-col items-center justify-center touch-target" onclick="app.navigateTo('profile')">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-xs">프로필</span>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Core JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/data-layer.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/screens/login.js"></script>
+    <script src="js/screens/driver-home.js"></script>
+    <script src="js/screens/driver-stop-detail.js"></script>
+    <script src="js/screens/ops-home.js"></script>
+    <script src="js/screens/ops-driver-detail.js"></script>
+    <script src="js/screens/report.js"></script>
+    <script src="js/screens/profile.js"></script>
+    <script src="js/screens/admin-home.js"></script>
+    <script src="js/screens/location-management.js"></script>
+    <script src="js/screens/location-form.js"></script>
+    <script src="js/screens/create-assignment.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
