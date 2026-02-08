@@ -1,0 +1,99 @@
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.splash-content {
+    text-align: center;
+    color: var(--color-text);
+    position: relative;
+    /* Projector Flicker */
+    animation: flicker 4s infinite alternate;
+}
+
+.logo-container {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.splash-content h1 {
+    font-size: 2.5rem;
+    font-family: var(--font-serif);
+    margin-bottom: 1rem;
+    color: var(--color-text);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--color-text-muted);
+    border-bottom: 1px solid var(--color-text-muted);
+    padding: 10px 0;
+    margin: 0 auto;
+    width: fit-content;
+}
+
+.tap-to-start {
+    margin-top: 50px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    opacity: 0.5;
+    animation: blink 2s infinite;
+}
+
+@keyframes flicker {
+    0% {
+        opacity: 0.95;
+    }
+
+    5% {
+        opacity: 0.8;
+    }
+
+    10% {
+        opacity: 0.9;
+    }
+
+    15% {
+        opacity: 0.6;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.9;
+    }
+
+    100% {
+        opacity: 0.95;
+    }
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}

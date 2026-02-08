@@ -1,0 +1,91 @@
+:root {
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-sans: 'Inter', sans-serif;
+
+  /* Cinema Palette */
+  --color-bg: #0a0a0a;
+  /* Deep Black */
+  --color-warm-light: #f0e6d2;
+  /* Parchment / Lightbox White */
+  --color-cinema-red: #cd212a;
+  /* Director's Red */
+  --color-film-base: #1a1515;
+  /* Dark Brown-Black */
+
+  --color-text: #f0e6d2;
+  --color-text-muted: rgba(240, 230, 210, 0.5);
+
+  /* Texture */
+  --grain-overlay: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Global Film Grain */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--grain-overlay);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+class-titles {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+
+/* Utilities */
+.cinema-border {
+  border: 1px solid var(--color-text-muted);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+}
