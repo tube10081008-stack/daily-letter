@@ -113,7 +113,7 @@ function SlideRenderer({ content, activeSlide }) {
                             </div>
                             <h1 className="cover-daily-title">
                                 {content.date.replace(/.*?(\d+)월\s*(\d+)일\s*([가-힣])요일.*/, '$1월 $2일($3)')}<br />
-                                AI 뉴스 총정리
+                                AI 뉴스 TOP 3
                             </h1>
                         </div>
                         <div className="cover-bottom">

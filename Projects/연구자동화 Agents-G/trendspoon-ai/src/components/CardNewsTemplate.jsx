@@ -24,7 +24,7 @@ function CoverSlide({ date, coverHook }) {
                     </div>
                     <h1 className="cover-daily-title">
                         {formattedDate}<br />
-                        AI 뉴스 총정리
+                        AI 뉴스 TOP 3
                     </h1>
                 </div>
                 <div className="cover-bottom">
