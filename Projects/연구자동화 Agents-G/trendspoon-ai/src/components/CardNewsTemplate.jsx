@@ -52,7 +52,13 @@ function NewsHeadlineSlide({ news, index, slideId }) {
 
     return (
         <div id={`card-slide-${slideId}`} className="card-slide card-headline" style={{ background: bgPatterns[index] }}>
-            <div className="card-content">
+            {news.imageUrl && (
+                <>
+                    <div className="headline-bg-image" style={{ backgroundImage: `url(/api/proxy-image?url=${encodeURIComponent(news.imageUrl)})` }} />
+                    <div className="headline-bg-overlay" />
+                </>
+            )}
+            <div className="card-content headline-content-wrapper">
                 {/* 상단 */}
                 <div className="v2-top-row">
                     <div className="v2-number" style={{ color: accent }}>

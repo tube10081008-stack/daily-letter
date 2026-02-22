@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0E0E1E"/>
+      <stop offset="100%" style="stop-color:#1A1A2E"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C6FF7"/>
+      <stop offset="100%" style="stop-color:#3DD6A7"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="36" fill="url(#bg)"/>
+  <ellipse cx="90" cy="65" rx="28" ry="36" fill="none" stroke="url(#accent)" stroke-width="7"/>
+  <rect x="86" y="96" width="8" height="56" rx="4" fill="url(#accent)"/>
+</svg>

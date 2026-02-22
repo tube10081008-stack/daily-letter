@@ -76,6 +76,27 @@ function parseRSSItems(xmlText, sourceName, sourceIcon) {
         // HTML 태그 제거
         const cleanDescription = description.replace(/<[^>]*>/g, '').substring(0, 300);
 
+        // 이미지 추출
+        let imageUrl = '';
+        const mediaContent = item.getElementsByTagNameNS('*', 'content');
+        if (mediaContent.length > 0) {
+            for (let i = 0; i < mediaContent.length; i++) {
+                const url = mediaContent[i].getAttribute('url');
+                const medium = mediaContent[i].getAttribute('medium');
+                if (url && (medium === 'image' || !medium)) { imageUrl = url; break; }
+            }
+        }
+        if (!imageUrl) {
+            const enclosure = item.querySelector('enclosure');
+            if (enclosure && enclosure.getAttribute('type')?.startsWith('image')) {
+                imageUrl = enclosure.getAttribute('url');
+            }
+        }
+        if (!imageUrl && description) {
+            const imgMatch = description.match(/<img[^>]+src="([^">]+)"/);
+            if (imgMatch) imageUrl = imgMatch[1];
+        }
+
         if (title) {
             newsItems.push({
                 id: `${sourceName}-${index}`,
@@ -85,6 +106,7 @@ function parseRSSItems(xmlText, sourceName, sourceIcon) {
                 link,
                 description: cleanDescription,
                 pubDate: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+                imageUrl: imageUrl || '',
             });
         }
     });

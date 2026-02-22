@@ -178,7 +178,13 @@ function SlideRenderer({ content, activeSlide }) {
         return (
             <div className="slide-preview-scaled">
                 <div className="card-slide card-headline preview-card" style={{ background: bgPatterns[newsIndex] }}>
-                    <div className="card-content">
+                    {news.imageUrl && (
+                        <>
+                            <div className="headline-bg-image" style={{ backgroundImage: `url(/api/proxy-image?url=${encodeURIComponent(news.imageUrl)})` }} />
+                            <div className="headline-bg-overlay" />
+                        </>
+                    )}
+                    <div className="card-content headline-content-wrapper">
                         <div className="v2-top-row">
                             <div className="v2-number" style={{ color: accent }}>
                                 <span className="v2-number-label">NEWS</span>

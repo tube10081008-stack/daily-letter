@@ -27,7 +27,7 @@ export async function generateNewsContent(newsItems, onProgress) {
 
     // 뉴스 목록을 텍스트로 변환
     const newsListText = newsItems.map((item, i) =>
-        `${i + 1}. [${item.source}] ${item.title}\n   요약: ${item.description}\n   링크: ${item.link}`
+        `${i + 1}. [${item.source}] ${item.title}\n   요약: ${item.description}\n   링크: ${item.link}\n   이미지: ${item.imageUrl || ''}`
     ).join('\n\n');
 
     const today = new Date().toLocaleDateString('ko-KR', {
@@ -65,7 +65,8 @@ ${newsListText}
       "insight": "이 뉴스가 우리 일상/산업에 미치는 영향을 한 문장으로 (구체적이고 날카롭게)",
       "source": "출처 미디어 이름",
       "sourceUrl": "원본 기사 URL",
-      "category": "AI 카테고리 (생성AI / 로보틱스 / AI윤리 / AI비즈니스 / AI연구 / 빅테크 중 택1)"
+      "category": "AI 카테고리 (생성AI / 로보틱스 / AI윤리 / AI비즈니스 / AI연구 / 빅테크 중 택1)",
+      "imageUrl": "제공된 기사 원본 이미지 URL (없으면 빈 문자열)"
     }
   ]
 }
