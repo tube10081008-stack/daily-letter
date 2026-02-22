@@ -76,25 +76,63 @@ function parseRSSItems(xmlText, sourceName, sourceIcon) {
         // HTML 태그 제거
         const cleanDescription = description.replace(/<[^>]*>/g, '').substring(0, 300);
 
-        // 이미지 추출
+        // 이미지 추출 강화 (TechCrunch 등 다양한 워드프레스 RSS 대응)
         let imageUrl = '';
-        const mediaContent = item.getElementsByTagNameNS('*', 'content');
-        if (mediaContent.length > 0) {
-            for (let i = 0; i < mediaContent.length; i++) {
-                const url = mediaContent[i].getAttribute('url');
-                const medium = mediaContent[i].getAttribute('medium');
-                if (url && (medium === 'image' || !medium)) { imageUrl = url; break; }
+
+        // 1. <media:thumbnail> 체크
+        const mediaThumbnail = item.getElementsByTagName('media:thumbnail');
+        if (mediaThumbnail.length > 0 && mediaThumbnail[0].getAttribute('url')) {
+            imageUrl = mediaThumbnail[0].getAttribute('url');
+        }
+
+        // 2. <media:content> 체크
+        if (!imageUrl) {
+            const mediaContent = item.getElementsByTagName('media:content');
+            if (mediaContent.length > 0) {
+                for (let i = 0; i < mediaContent.length; i++) {
+                    const url = mediaContent[i].getAttribute('url');
+                    const medium = mediaContent[i].getAttribute('medium');
+                    if (url && (medium === 'image' || !medium)) { imageUrl = url; break; }
+                }
             }
         }
+
+        // 3. 네임스페이스가 엉켰을 경우 대비
+        if (!imageUrl) {
+            const mediaContentNS = item.getElementsByTagNameNS('*', 'content');
+            if (mediaContentNS.length > 0) {
+                for (let i = 0; i < mediaContentNS.length; i++) {
+                    const url = mediaContentNS[i].getAttribute('url');
+                    if (url) { imageUrl = url; break; }
+                }
+            }
+        }
+
+        // 4. <enclosure type="image/*"> 체크
         if (!imageUrl) {
             const enclosure = item.querySelector('enclosure');
             if (enclosure && enclosure.getAttribute('type')?.startsWith('image')) {
                 imageUrl = enclosure.getAttribute('url');
             }
         }
+
+        // 5. description 내의 img 태그 src 체크
         if (!imageUrl && description) {
-            const imgMatch = description.match(/<img[^>]+src="([^">]+)"/);
-            if (imgMatch) imageUrl = imgMatch[1];
+            const imgMatch = description.match(/<img[^>]+src="([^">]+)"/i);
+            if (imgMatch) {
+                imageUrl = imgMatch[1];
+            }
+        }
+
+        // 6. content:encoded 내의 img 태그 체크 (보통 본문에 큰 이미지가 있음)
+        if (!imageUrl) {
+            const contentEncoded = item.getElementsByTagName('content:encoded');
+            if (contentEncoded.length > 0) {
+                const imgMatch = contentEncoded[0].textContent.match(/<img[^>]+src="([^">]+)"/i);
+                if (imgMatch) {
+                    imageUrl = imgMatch[1];
+                }
+            }
         }
 
         if (title) {

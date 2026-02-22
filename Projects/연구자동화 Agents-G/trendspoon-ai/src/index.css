@@ -1035,6 +1035,63 @@ body {
   font-weight: 400;
 }
 
+/* ═══ 헤드라인 배경 이미지 ═══ */
+.headline-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.headline-bg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(8, 8, 16, 0.55) 0%, rgba(8, 8, 16, 0.85) 100%);
+  z-index: 1;
+}
+
+.headline-content-wrapper {
+  position: relative;
+  z-index: 2;
+}
+
+/* --- 헤드라인 레이아웃 --- */
+.headline-center {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 32px;
+}
+
+.headline-big {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -1.5px;
+  color: #ffffff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  word-break: keep-all;
+}
+
+.headline-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headline-next {
+  font-size: 18px;
+  font-weight: 600;
+}
+
 /* ═══ 뉴스 슬라이드 v3 — 2페이지 시스템 ═══ */
 
 /* 공통 상단 요소 */
